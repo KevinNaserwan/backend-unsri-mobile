@@ -48,6 +48,12 @@ func main() {
 		&models.Attendance{},
 		&models.AttendanceSession{},
 		&models.Schedule{},
+		// Work Attendance (HRIS) models
+		&models.ShiftPattern{},
+		&models.UserShift{},
+		&models.WorkSchedule{},
+		&models.WorkAttendanceSession{},
+		&models.WorkAttendanceRecord{},
 	); err != nil {
 		log.Fatal("Failed to migrate database", err)
 	}

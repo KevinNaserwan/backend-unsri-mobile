@@ -30,6 +30,19 @@ func SetupRoutes(router *gin.Engine, handler *CourseHandler, jwtToken *jwt.JWT) 
 		classes.GET("", handler.GetClasses)
 		classes.GET("/:id", handler.GetClass)
 		classes.POST("", middleware.RoleMiddleware("dosen", "staff"), handler.CreateClass)
+		classes.GET("/:id/enrollments", handler.GetEnrollmentsByClass)
+	}
+
+	enrollments := router.Group("/api/v1/enrollments")
+	enrollments.Use(middleware.AuthMiddleware(jwtToken))
+	{
+		enrollments.GET("", handler.GetEnrollments)
+		enrollments.GET("/:id", handler.GetEnrollment)
+		enrollments.POST("", handler.CreateEnrollment) // Students can enroll themselves
+		enrollments.PUT("/:id/status", middleware.RoleMiddleware("dosen", "staff"), handler.UpdateEnrollmentStatus) // Approve/Reject
+		enrollments.PUT("/:id/grade", middleware.RoleMiddleware("dosen", "staff"), handler.UpdateEnrollmentGrade)   // Update grade
+		enrollments.DELETE("/:id", handler.DeleteEnrollment)
+		enrollments.GET("/by-student/:studentId", handler.GetEnrollmentsByStudent)
 	}
 }
 

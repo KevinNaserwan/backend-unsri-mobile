@@ -1,0 +1,28 @@
+# Build stage
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /app
+
+# Copy go mod files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/bin/leave-service ./cmd/leave-service
+
+# Runtime stage
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /root/
+
+COPY --from=builder /app/bin/leave-service .
+
+EXPOSE 8097
+
+CMD ["./leave-service"]
+

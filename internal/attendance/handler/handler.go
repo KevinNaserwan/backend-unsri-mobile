@@ -373,3 +373,241 @@ func (h *AttendanceHandler) GetTodaySchedules(c *gin.Context) {
 	utils.SuccessResponse(c, 200, schedules)
 }
 
+// ========== Work Attendance (HRIS) Handlers ==========
+
+// CreateShiftPattern handles create shift pattern request
+func (h *AttendanceHandler) CreateShiftPattern(c *gin.Context) {
+	var req service.CreateShiftPatternRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, 400, err)
+		return
+	}
+
+	result, err := h.service.CreateShiftPattern(c.Request.Context(), req)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, 201, result)
+}
+
+// GetShiftPattern handles get shift pattern by ID request
+func (h *AttendanceHandler) GetShiftPattern(c *gin.Context) {
+	shiftID := c.Param("id")
+
+	result, err := h.service.GetShiftPatternByID(c.Request.Context(), shiftID)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, 200, result)
+}
+
+// GetShiftPatterns handles get shift patterns request
+func (h *AttendanceHandler) GetShiftPatterns(c *gin.Context) {
+	var req service.GetShiftPatternsRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		utils.ErrorResponse(c, 400, err)
+		return
+	}
+
+	shifts, total, err := h.service.GetShiftPatterns(c.Request.Context(), req)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	perPage := req.PerPage
+	if perPage < 1 {
+		perPage = 20
+	}
+
+	utils.PaginatedResponse(c, shifts, page, perPage, total)
+}
+
+// UpdateShiftPattern handles update shift pattern request
+func (h *AttendanceHandler) UpdateShiftPattern(c *gin.Context) {
+	shiftID := c.Param("id")
+
+	var req service.UpdateShiftPatternRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, 400, err)
+		return
+	}
+
+	result, err := h.service.UpdateShiftPattern(c.Request.Context(), shiftID, req)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, 200, result)
+}
+
+// DeleteShiftPattern handles delete shift pattern request
+func (h *AttendanceHandler) DeleteShiftPattern(c *gin.Context) {
+	shiftID := c.Param("id")
+
+	err := h.service.DeleteShiftPattern(c.Request.Context(), shiftID)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, 200, gin.H{"message": "Shift pattern deleted successfully"})
+}
+
+// CreateUserShift handles create user shift request
+func (h *AttendanceHandler) CreateUserShift(c *gin.Context) {
+	var req service.CreateUserShiftRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, 400, err)
+		return
+	}
+
+	result, err := h.service.CreateUserShift(c.Request.Context(), req)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, 201, result)
+}
+
+// GetUserShifts handles get user shifts request
+func (h *AttendanceHandler) GetUserShifts(c *gin.Context) {
+	userID := c.Param("userId")
+	date := c.Query("date")
+
+	var datePtr *string
+	if date != "" {
+		datePtr = &date
+	}
+
+	result, err := h.service.GetUserShiftsByUserID(c.Request.Context(), userID, datePtr)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, 200, result)
+}
+
+// CreateWorkSchedule handles create work schedule request
+func (h *AttendanceHandler) CreateWorkSchedule(c *gin.Context) {
+	var req service.CreateWorkScheduleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, 400, err)
+		return
+	}
+
+	result, err := h.service.CreateWorkSchedule(c.Request.Context(), req)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, 201, result)
+}
+
+// GetWorkSchedules handles get work schedules request
+func (h *AttendanceHandler) GetWorkSchedules(c *gin.Context) {
+	var req service.GetWorkSchedulesRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		utils.ErrorResponse(c, 400, err)
+		return
+	}
+
+	schedules, total, err := h.service.GetWorkSchedules(c.Request.Context(), req)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	perPage := req.PerPage
+	if perPage < 1 {
+		perPage = 20
+	}
+
+	utils.PaginatedResponse(c, schedules, page, perPage, total)
+}
+
+// CheckIn handles work check-in request
+func (h *AttendanceHandler) CheckIn(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	var req service.CheckInRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, 400, err)
+		return
+	}
+
+	result, err := h.service.CheckIn(c.Request.Context(), userID, req)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, 201, result)
+}
+
+// CheckOut handles work check-out request
+func (h *AttendanceHandler) CheckOut(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	var req service.CheckOutRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, 400, err)
+		return
+	}
+
+	result, err := h.service.CheckOut(c.Request.Context(), userID, req)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, 201, result)
+}
+
+// GetWorkAttendanceRecords handles get work attendance records request
+func (h *AttendanceHandler) GetWorkAttendanceRecords(c *gin.Context) {
+	var req service.GetWorkAttendanceRecordsRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		utils.ErrorResponse(c, 400, err)
+		return
+	}
+
+	// If user_id not provided, use current user
+	if req.UserID == "" {
+		req.UserID = c.GetString("user_id")
+	}
+
+	records, total, err := h.service.GetWorkAttendanceRecords(c.Request.Context(), req)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	perPage := req.PerPage
+	if perPage < 1 {
+		perPage = 20
+	}
+
+	utils.PaginatedResponse(c, records, page, perPage, total)
+}
+

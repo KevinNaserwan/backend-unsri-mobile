@@ -47,5 +47,42 @@ func SetupRoutes(router *gin.Engine, handler *AttendanceHandler, jwtToken *jwt.J
 		schedules.PUT("/:id", middleware.RoleMiddleware("dosen", "staff"), handler.UpdateSchedule)
 		schedules.DELETE("/:id", middleware.RoleMiddleware("dosen", "staff"), handler.DeleteSchedule)
 	}
+
+	// Work Attendance (HRIS) routes
+	workAttendance := router.Group("/api/v1/work-attendance")
+	workAttendance.Use(middleware.AuthMiddleware(jwtToken))
+	{
+		// Check-in/out
+		workAttendance.POST("/check-in", handler.CheckIn)
+		workAttendance.POST("/check-out", handler.CheckOut)
+		workAttendance.GET("/records", handler.GetWorkAttendanceRecords)
+
+		// Shift patterns (admin only)
+		shifts := workAttendance.Group("/shifts")
+		shifts.Use(middleware.RoleMiddleware("dosen", "staff"))
+		{
+			shifts.GET("", handler.GetShiftPatterns)
+			shifts.GET("/:id", handler.GetShiftPattern)
+			shifts.POST("", handler.CreateShiftPattern)
+			shifts.PUT("/:id", handler.UpdateShiftPattern)
+			shifts.DELETE("/:id", handler.DeleteShiftPattern)
+		}
+
+		// User shifts (admin only)
+		userShifts := workAttendance.Group("/user-shifts")
+		userShifts.Use(middleware.RoleMiddleware("dosen", "staff"))
+		{
+			userShifts.GET("/:userId", handler.GetUserShifts)
+			userShifts.POST("", handler.CreateUserShift)
+		}
+
+		// Work schedules (admin only)
+		workSchedules := workAttendance.Group("/schedules")
+		workSchedules.Use(middleware.RoleMiddleware("dosen", "staff"))
+		{
+			workSchedules.GET("", handler.GetWorkSchedules)
+			workSchedules.POST("", handler.CreateWorkSchedule)
+		}
+	}
 }
 

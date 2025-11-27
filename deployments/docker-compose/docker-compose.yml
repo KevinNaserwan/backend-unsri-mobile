@@ -439,6 +439,54 @@ services:
       - unsri-network
     restart: unless-stopped
 
+  master-data-service:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile.master-data-service
+    container_name: unsri-master-data-service
+    ports:
+      - "8096:8096"
+    environment:
+      - PORT=8096
+      - LOG_LEVEL=info
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_USER=unsri_user
+      - DATABASE_PASSWORD=unsri_pass
+      - DATABASE_NAME=unsri_db
+      - DATABASE_SSLMODE=disable
+      - JWT_SECRET=your-secret-key-change-in-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - unsri-network
+    restart: unless-stopped
+
+  leave-service:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile.leave-service
+    container_name: unsri-leave-service
+    ports:
+      - "8097:8097"
+    environment:
+      - PORT=8097
+      - LOG_LEVEL=info
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_USER=unsri_user
+      - DATABASE_PASSWORD=unsri_pass
+      - DATABASE_NAME=unsri_db
+      - DATABASE_SSLMODE=disable
+      - JWT_SECRET=your-secret-key-change-in-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - unsri-network
+    restart: unless-stopped
+
   api-gateway:
     build:
       context: ../..
@@ -465,6 +513,8 @@ services:
       - FILE_SERVICE_URL=http://file-storage-service:8093
       - SEARCH_SERVICE_URL=http://search-service:8094
       - REPORT_SERVICE_URL=http://report-service:8095
+      - MASTER_DATA_SERVICE_URL=http://master-data-service:8096
+      - LEAVE_SERVICE_URL=http://leave-service:8097
       - JWT_SECRET=your-secret-key-change-in-production
     depends_on:
       - auth-service
@@ -482,6 +532,8 @@ services:
       - file-storage-service
       - search-service
       - report-service
+      - master-data-service
+      - leave-service
     networks:
       - unsri-network
     restart: unless-stopped

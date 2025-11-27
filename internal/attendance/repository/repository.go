@@ -360,3 +360,294 @@ func (r *AttendanceRepository) DeleteSchedule(ctx context.Context, id string) er
 	return r.db.WithContext(ctx).Delete(&models.Schedule{}, "id = ?", id).Error
 }
 
+// ========== Work Attendance (HRIS) Repository Methods ==========
+
+// CreateShiftPattern creates a new shift pattern
+func (r *AttendanceRepository) CreateShiftPattern(ctx context.Context, shift *models.ShiftPattern) error {
+	return r.db.WithContext(ctx).Create(shift).Error
+}
+
+// GetShiftPatternByID gets a shift pattern by ID
+func (r *AttendanceRepository) GetShiftPatternByID(ctx context.Context, id string) (*models.ShiftPattern, error) {
+	var shift models.ShiftPattern
+	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&shift).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("shift pattern not found")
+		}
+		return nil, err
+	}
+	return &shift, nil
+}
+
+// GetShiftPatternByCode gets a shift pattern by code
+func (r *AttendanceRepository) GetShiftPatternByCode(ctx context.Context, code string) (*models.ShiftPattern, error) {
+	var shift models.ShiftPattern
+	if err := r.db.WithContext(ctx).Where("shift_code = ?", code).First(&shift).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("shift pattern not found")
+		}
+		return nil, err
+	}
+	return &shift, nil
+}
+
+// GetAllShiftPatterns gets all shift patterns with filters
+func (r *AttendanceRepository) GetAllShiftPatterns(ctx context.Context, isActive *bool, limit, offset int) ([]models.ShiftPattern, int64, error) {
+	var shifts []models.ShiftPattern
+	var total int64
+
+	query := r.db.WithContext(ctx).Model(&models.ShiftPattern{})
+
+	if isActive != nil {
+		query = query.Where("is_active = ?", *isActive)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.Limit(limit).Offset(offset).Order("shift_code ASC").Find(&shifts).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return shifts, total, nil
+}
+
+// UpdateShiftPattern updates a shift pattern
+func (r *AttendanceRepository) UpdateShiftPattern(ctx context.Context, shift *models.ShiftPattern) error {
+	return r.db.WithContext(ctx).Save(shift).Error
+}
+
+// DeleteShiftPattern soft deletes a shift pattern
+func (r *AttendanceRepository) DeleteShiftPattern(ctx context.Context, id string) error {
+	return r.db.WithContext(ctx).Delete(&models.ShiftPattern{}, "id = ?", id).Error
+}
+
+// CreateUserShift creates a new user shift assignment
+func (r *AttendanceRepository) CreateUserShift(ctx context.Context, userShift *models.UserShift) error {
+	return r.db.WithContext(ctx).Create(userShift).Error
+}
+
+// GetUserShiftByID gets a user shift by ID
+func (r *AttendanceRepository) GetUserShiftByID(ctx context.Context, id string) (*models.UserShift, error) {
+	var userShift models.UserShift
+	if err := r.db.WithContext(ctx).Preload("User").Preload("Shift").Where("id = ?", id).First(&userShift).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user shift not found")
+		}
+		return nil, err
+	}
+	return &userShift, nil
+}
+
+// GetUserShiftsByUserID gets user shifts by user ID
+func (r *AttendanceRepository) GetUserShiftsByUserID(ctx context.Context, userID string, date *time.Time) ([]models.UserShift, error) {
+	var userShifts []models.UserShift
+	query := r.db.WithContext(ctx).Preload("Shift").Where("user_id = ? AND is_active = ?", userID, true)
+
+	if date != nil {
+		query = query.Where("effective_from <= ? AND (effective_until IS NULL OR effective_until >= ?)", date, date)
+	}
+
+	if err := query.Order("effective_from DESC").Find(&userShifts).Error; err != nil {
+		return nil, err
+	}
+	return userShifts, nil
+}
+
+// UpdateUserShift updates a user shift
+func (r *AttendanceRepository) UpdateUserShift(ctx context.Context, userShift *models.UserShift) error {
+	return r.db.WithContext(ctx).Save(userShift).Error
+}
+
+// DeleteUserShift soft deletes a user shift
+func (r *AttendanceRepository) DeleteUserShift(ctx context.Context, id string) error {
+	return r.db.WithContext(ctx).Delete(&models.UserShift{}, "id = ?", id).Error
+}
+
+// CreateWorkSchedule creates a new work schedule
+func (r *AttendanceRepository) CreateWorkSchedule(ctx context.Context, schedule *models.WorkSchedule) error {
+	return r.db.WithContext(ctx).Create(schedule).Error
+}
+
+// GetWorkScheduleByID gets a work schedule by ID
+func (r *AttendanceRepository) GetWorkScheduleByID(ctx context.Context, id string) (*models.WorkSchedule, error) {
+	var schedule models.WorkSchedule
+	if err := r.db.WithContext(ctx).Preload("User").Preload("Shift").Where("id = ?", id).First(&schedule).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("work schedule not found")
+		}
+		return nil, err
+	}
+	return &schedule, nil
+}
+
+// GetWorkSchedulesByUserID gets work schedules by user ID
+func (r *AttendanceRepository) GetWorkSchedulesByUserID(ctx context.Context, userID string, startDate, endDate *time.Time) ([]models.WorkSchedule, error) {
+	var schedules []models.WorkSchedule
+	query := r.db.WithContext(ctx).Preload("Shift").Where("user_id = ? AND is_active = ?", userID, true)
+
+	if startDate != nil {
+		query = query.Where("schedule_date >= ?", startDate)
+	}
+	if endDate != nil {
+		query = query.Where("schedule_date <= ?", endDate)
+	}
+
+	if err := query.Order("schedule_date ASC, start_time ASC").Find(&schedules).Error; err != nil {
+		return nil, err
+	}
+	return schedules, nil
+}
+
+// GetAllWorkSchedules gets all work schedules with filters
+func (r *AttendanceRepository) GetAllWorkSchedules(ctx context.Context, userID *string, startDate, endDate *time.Time, limit, offset int) ([]models.WorkSchedule, int64, error) {
+	var schedules []models.WorkSchedule
+	var total int64
+
+	query := r.db.WithContext(ctx).Model(&models.WorkSchedule{}).Where("is_active = ?", true)
+
+	if userID != nil {
+		query = query.Where("user_id = ?", *userID)
+	}
+	if startDate != nil {
+		query = query.Where("schedule_date >= ?", startDate)
+	}
+	if endDate != nil {
+		query = query.Where("schedule_date <= ?", endDate)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.Preload("User").Preload("Shift").Limit(limit).Offset(offset).Order("schedule_date ASC, start_time ASC").Find(&schedules).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return schedules, total, nil
+}
+
+// UpdateWorkSchedule updates a work schedule
+func (r *AttendanceRepository) UpdateWorkSchedule(ctx context.Context, schedule *models.WorkSchedule) error {
+	return r.db.WithContext(ctx).Save(schedule).Error
+}
+
+// DeleteWorkSchedule soft deletes a work schedule
+func (r *AttendanceRepository) DeleteWorkSchedule(ctx context.Context, id string) error {
+	return r.db.WithContext(ctx).Delete(&models.WorkSchedule{}, "id = ?", id).Error
+}
+
+// CreateWorkAttendanceSession creates a new work attendance session
+func (r *AttendanceRepository) CreateWorkAttendanceSession(ctx context.Context, session *models.WorkAttendanceSession) error {
+	return r.db.WithContext(ctx).Create(session).Error
+}
+
+// GetWorkAttendanceSessionByID gets a work attendance session by ID
+func (r *AttendanceRepository) GetWorkAttendanceSessionByID(ctx context.Context, id string) (*models.WorkAttendanceSession, error) {
+	var session models.WorkAttendanceSession
+	if err := r.db.WithContext(ctx).Preload("Schedule").Where("id = ?", id).First(&session).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("work attendance session not found")
+		}
+		return nil, err
+	}
+	return &session, nil
+}
+
+// GetWorkAttendanceSessionByQRCode gets a work attendance session by QR code
+func (r *AttendanceRepository) GetWorkAttendanceSessionByQRCode(ctx context.Context, qrCode string) (*models.WorkAttendanceSession, error) {
+	var session models.WorkAttendanceSession
+	if err := r.db.WithContext(ctx).Preload("Schedule").
+		Where("qr_code_data = ? AND is_active = ? AND (expires_at IS NULL OR expires_at > ?)", qrCode, true, time.Now()).
+		First(&session).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("work attendance session not found or expired")
+		}
+		return nil, err
+	}
+	return &session, nil
+}
+
+// UpdateWorkAttendanceSession updates a work attendance session
+func (r *AttendanceRepository) UpdateWorkAttendanceSession(ctx context.Context, session *models.WorkAttendanceSession) error {
+	return r.db.WithContext(ctx).Save(session).Error
+}
+
+// CreateWorkAttendanceRecord creates a new work attendance record
+func (r *AttendanceRepository) CreateWorkAttendanceRecord(ctx context.Context, record *models.WorkAttendanceRecord) error {
+	return r.db.WithContext(ctx).Create(record).Error
+}
+
+// GetWorkAttendanceRecordByID gets a work attendance record by ID
+func (r *AttendanceRepository) GetWorkAttendanceRecordByID(ctx context.Context, id string) (*models.WorkAttendanceRecord, error) {
+	var record models.WorkAttendanceRecord
+	if err := r.db.WithContext(ctx).Preload("User").Preload("Schedule").Where("id = ?", id).First(&record).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("work attendance record not found")
+		}
+		return nil, err
+	}
+	return &record, nil
+}
+
+// GetWorkAttendanceRecordsByUserID gets work attendance records by user ID
+func (r *AttendanceRepository) GetWorkAttendanceRecordsByUserID(ctx context.Context, userID string, startDate, endDate *time.Time, limit, offset int) ([]models.WorkAttendanceRecord, int64, error) {
+	var records []models.WorkAttendanceRecord
+	var total int64
+
+	query := r.db.WithContext(ctx).Model(&models.WorkAttendanceRecord{}).Where("user_id = ?", userID)
+
+	if startDate != nil {
+		query = query.Where("DATE(recorded_at) >= ?", startDate)
+	}
+	if endDate != nil {
+		query = query.Where("DATE(recorded_at) <= ?", endDate)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.Preload("User").Preload("Schedule").Order("recorded_at DESC").Limit(limit).Offset(offset).Find(&records).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return records, total, nil
+}
+
+// GetWorkAttendanceRecordsByScheduleID gets work attendance records by schedule ID
+func (r *AttendanceRepository) GetWorkAttendanceRecordsByScheduleID(ctx context.Context, scheduleID string) ([]models.WorkAttendanceRecord, error) {
+	var records []models.WorkAttendanceRecord
+	if err := r.db.WithContext(ctx).Preload("User").
+		Where("schedule_id = ?", scheduleID).
+		Order("recorded_at ASC").
+		Find(&records).Error; err != nil {
+		return nil, err
+	}
+	return records, nil
+}
+
+// GetTodayWorkAttendanceRecord gets today's work attendance record for check-in/out
+func (r *AttendanceRepository) GetTodayWorkAttendanceRecord(ctx context.Context, userID string, attendanceType string) (*models.WorkAttendanceRecord, error) {
+	today := time.Now().Format("2006-01-02")
+	var record models.WorkAttendanceRecord
+
+	if err := r.db.WithContext(ctx).
+		Where("user_id = ? AND DATE(recorded_at) = ? AND attendance_type = ?", userID, today, attendanceType).
+		Order("recorded_at DESC").
+		First(&record).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil // No record found
+		}
+		return nil, err
+	}
+
+	return &record, nil
+}
+
+// UpdateWorkAttendanceRecord updates a work attendance record
+func (r *AttendanceRepository) UpdateWorkAttendanceRecord(ctx context.Context, record *models.WorkAttendanceRecord) error {
+	return r.db.WithContext(ctx).Save(record).Error
+}
+

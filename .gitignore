@@ -4,25 +4,23 @@
 *.dll
 *.so
 *.dylib
+bin/
+*.test
+*.out
 
 # Test binary, built with `go test -c`
 *.test
 
 # Output of the go coverage tool
-*.out
+coverage.out
+coverage.html
+*.coverprofile
 
 # Dependency directories
 vendor/
 
 # Go workspace file
 go.work
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-.env.production
-.env.development
 
 # IDE
 .idea/
@@ -35,32 +33,18 @@ go.work
 .DS_Store
 Thumbs.db
 
-# Build output
-bin/
-dist/
-build/
+# Environment variables
+.env
+.env.local
+.env.*.local
 
 # Logs
 *.log
 logs/
 
-# Storage
-storage/
-*.db
-*.sqlite
+# Docker
+.dockerignore
 
 # Temporary files
 tmp/
 temp/
-
-# Docker
-.dockerignore
-
-# Kubernetes
-*.kubeconfig
-
-# Secrets
-secrets/
-*.pem
-*.key
-*.crt

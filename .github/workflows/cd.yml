@@ -1,0 +1,164 @@
+name: CD
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+
+env:
+  GO_VERSION: '1.24'
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker images
+        run: |
+          SERVICES=(
+            "api-gateway"
+            "auth-service"
+            "user-service"
+            "attendance-service"
+            "schedule-service"
+            "qr-service"
+            "course-service"
+            "broadcast-service"
+            "notification-service"
+            "calendar-service"
+            "location-service"
+            "access-service"
+            "quick-actions-service"
+            "file-storage-service"
+            "search-service"
+            "report-service"
+            "master-data-service"
+            "leave-service"
+          )
+          
+          for service in "${SERVICES[@]}"; do
+            docker build \
+              -f deployments/docker/Dockerfile.$service \
+              -t ${{ secrets.DOCKER_USERNAME }}/unsri-$service:staging \
+              -t ${{ secrets.DOCKER_USERNAME }}/unsri-$service:${{ github.sha }} \
+              .
+            docker push ${{ secrets.DOCKER_USERNAME }}/unsri-$service:staging
+            docker push ${{ secrets.DOCKER_USERNAME }}/unsri-$service:${{ github.sha }}
+          done
+
+      - name: Deploy to staging server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            cd /opt/unsri-backend
+            docker-compose pull
+            docker-compose up -d
+            docker-compose ps
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract version tag
+        id: tag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker images
+        run: |
+          VERSION=${{ steps.tag.outputs.VERSION }}
+          SERVICES=(
+            "api-gateway"
+            "auth-service"
+            "user-service"
+            "attendance-service"
+            "schedule-service"
+            "qr-service"
+            "course-service"
+            "broadcast-service"
+            "notification-service"
+            "calendar-service"
+            "location-service"
+            "access-service"
+            "quick-actions-service"
+            "file-storage-service"
+            "search-service"
+            "report-service"
+            "master-data-service"
+            "leave-service"
+          )
+          
+          for service in "${SERVICES[@]}"; do
+            docker build \
+              -f deployments/docker/Dockerfile.$service \
+              -t ${{ secrets.DOCKER_USERNAME }}/unsri-$service:$VERSION \
+              -t ${{ secrets.DOCKER_USERNAME }}/unsri-$service:latest \
+              .
+            docker push ${{ secrets.DOCKER_USERNAME }}/unsri-$service:$VERSION
+            docker push ${{ secrets.DOCKER_USERNAME }}/unsri-$service:latest
+          done
+
+      - name: Deploy to production server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          script: |
+            cd /opt/unsri-backend
+            export VERSION=${{ steps.tag.outputs.VERSION }}
+            docker-compose pull
+            docker-compose up -d
+            docker-compose ps
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.tag.outputs.VERSION }}
+          release_name: Release ${{ steps.tag.outputs.VERSION }}
+          body: |
+            Production release ${{ steps.tag.outputs.VERSION }}
+            
+            ## Changes
+            - See commit history for details
+            
+            ## Docker Images
+            All services tagged with version ${{ steps.tag.outputs.VERSION }}
+          draft: false
+          prerelease: false
+

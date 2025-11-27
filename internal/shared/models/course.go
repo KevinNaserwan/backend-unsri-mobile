@@ -80,17 +80,17 @@ func (c *Class) BeforeCreate(tx *gorm.DB) error {
 
 // Enrollment represents student enrollment in a class (KRS)
 type Enrollment struct {
-	ID            string    `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	StudentID     string    `gorm:"type:uuid;not null;index" json:"student_id"`
-	ClassID       string    `gorm:"type:uuid;not null;index" json:"class_id"`
-	EnrollmentDate time.Time `gorm:"not null" json:"enrollment_date"`
-	Status        string    `gorm:"type:varchar(20);not null;default:'active'" json:"status"` // active, completed, dropped, failed
-	Grade         string    `gorm:"type:varchar(5)" json:"grade"` // A, B, C, D, E
-	Score         float64   `gorm:"type:decimal(5,2)" json:"score"`
-	Notes         string    `gorm:"type:text" json:"notes"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
-	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
+	ID             string    `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	StudentID      string    `gorm:"type:uuid;not null;index" json:"student_id"`
+	ClassID        string    `gorm:"type:uuid;not null;index" json:"class_id"`
+	EnrollmentDate time.Time `gorm:"type:date;not null" json:"enrollment_date"`
+	Status         string    `gorm:"type:varchar(20);not null;default:'PENDING'" json:"status"` // PENDING, APPROVED, REJECTED, COMPLETED, DROPPED, FAILED
+	Grade          string    `gorm:"type:varchar(2)" json:"grade"`                              // A, B, C, D, E
+	Score          float64   `gorm:"type:decimal(5,2)" json:"score"`
+	Notes          string    `gorm:"type:text" json:"notes"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relations
 	Student User  `gorm:"foreignKey:StudentID" json:"student,omitempty"`

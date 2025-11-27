@@ -31,6 +31,13 @@ func SetupRoutes(router *gin.Engine, proxyHandler *ProxyHandler) {
 		attendance.Any("/*path", proxyHandler.ProxyAttendance)
 	}
 
+	// Work Attendance (HRIS) service routes
+	workAttendance := router.Group("/api/v1/work-attendance")
+	workAttendance.Use() // Add auth middleware here if needed
+	{
+		workAttendance.Any("/*path", proxyHandler.ProxyAttendance)
+	}
+
 	// Schedule service routes (dedicated)
 	schedules := router.Group("/api/v1/schedules")
 	schedules.Use() // Add auth middleware here if needed
@@ -43,6 +50,13 @@ func SetupRoutes(router *gin.Engine, proxyHandler *ProxyHandler) {
 	courses.Use() // Add auth middleware here if needed
 	{
 		courses.Any("/*path", proxyHandler.ProxyCourse)
+	}
+
+	// Enrollment service routes (part of course service)
+	enrollments := router.Group("/api/v1/enrollments")
+	enrollments.Use() // Add auth middleware here if needed
+	{
+		enrollments.Any("/*path", proxyHandler.ProxyCourse)
 	}
 
 	// Broadcast service routes
@@ -113,6 +127,38 @@ func SetupRoutes(router *gin.Engine, proxyHandler *ProxyHandler) {
 	reports.Use() // Add auth middleware here if needed
 	{
 		reports.Any("/*path", proxyHandler.ProxyReport)
+	}
+
+	// Master data service routes
+	studyPrograms := router.Group("/api/v1/study-programs")
+	studyPrograms.Use() // Add auth middleware here if needed
+	{
+		studyPrograms.Any("/*path", proxyHandler.ProxyMasterData)
+	}
+
+	academicPeriods := router.Group("/api/v1/academic-periods")
+	academicPeriods.Use() // Add auth middleware here if needed
+	{
+		academicPeriods.Any("/*path", proxyHandler.ProxyMasterData)
+	}
+
+	rooms := router.Group("/api/v1/rooms")
+	rooms.Use() // Add auth middleware here if needed
+	{
+		rooms.Any("/*path", proxyHandler.ProxyMasterData)
+	}
+
+	// Leave service routes
+	leaveRequests := router.Group("/api/v1/leave-requests")
+	leaveRequests.Use() // Add auth middleware here if needed
+	{
+		leaveRequests.Any("/*path", proxyHandler.ProxyLeave)
+	}
+
+	leaveQuotas := router.Group("/api/v1/leave-quotas")
+	leaveQuotas.Use() // Add auth middleware here if needed
+	{
+		leaveQuotas.Any("/*path", proxyHandler.ProxyLeave)
 	}
 }
 

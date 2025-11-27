@@ -17,6 +17,7 @@ Backend microservices untuk aplikasi mobile UNSRI dengan arsitektur microservice
 ## 🏗️ Overview
 
 Backend ini menggunakan arsitektur microservices dengan teknologi:
+
 - **Language**: Go 1.21+
 - **Framework**: Gin
 - **Database**: PostgreSQL 15+
@@ -93,12 +94,15 @@ Backend ini menggunakan arsitektur microservices dengan teknologi:
 14. **File Storage Service** (`:8093`) - Upload dan manajemen file
 15. **Search Service** (`:8094`) - Pencarian data akademik
 16. **Report Service** (`:8095`) - Generate laporan
+17. **Master Data Service** (`:8096`) - Master data management (Study Programs, Academic Periods, Rooms)
+18. **Leave Management Service** (`:8097`) - HRIS leave management (Leave requests, quotas, approvals)
 
 ## 👥 Roles
 
 Sistem mendukung 3 role:
+
 - **Mahasiswa** - Student
-- **Dosen** - Lecturer  
+- **Dosen** - Lecturer
 - **Staff** - Staff member
 
 ## 🚀 Quick Start
@@ -114,18 +118,21 @@ Sistem mendukung 3 role:
 ### 3 Langkah Cepat
 
 1. **Start Database & Redis:**
+
 ```bash
 cd deployments/docker-compose
 docker-compose up -d postgres redis rabbitmq
 ```
 
 2. **Run Migrations:**
+
 ```bash
 # Dari root project
 make migrate-up
 ```
 
 3. **Run Services:**
+
 ```bash
 # Opsi A: Manual (buka terminal terpisah untuk setiap service)
 make run-api-gateway
@@ -153,11 +160,13 @@ Lihat [QUICK_START.md](./QUICK_START.md) untuk panduan lebih detail, atau [docs/
 ### Swagger UI
 
 Setelah service berjalan, akses Swagger UI di:
+
 ```
 http://localhost:8080/swagger/index.html
 ```
 
 Untuk enable Swagger:
+
 ```bash
 export ENABLE_SWAGGER=true
 make run-api-gateway
@@ -173,6 +182,7 @@ Import Postman collection untuk testing API:
 4. Set `base_url` variable sesuai environment Anda
 
 **Collection includes:**
+
 - Authentication (Register, Login)
 - User Management
 - Attendance
@@ -185,18 +195,22 @@ Import Postman collection untuk testing API:
 ### API Endpoints
 
 #### Authentication
+
 - `POST /api/v1/auth/register` - Register user baru
 - `POST /api/v1/auth/login` - Login dan dapatkan JWT token
 
 #### Users
+
 - `GET /api/v1/users/profile` - Get user profile
 - `PUT /api/v1/users/profile` - Update profile
 
 #### Attendance
+
 - `POST /api/v1/attendance/scan` - Scan QR code untuk absensi
 - `GET /api/v1/attendance/history` - Get attendance history
 
 #### QR Code
+
 - `POST /api/v1/qr/class/generate` - Generate QR untuk absensi kelas
 - `POST /api/v1/qr/access/generate` - Generate QR untuk akses gate
 
@@ -298,6 +312,7 @@ make lint
 **Untuk MVP/Production awal: Gunakan Docker Compose** ✅
 
 **Kapan perlu Kubernetes?**
+
 - Traffic > 5,000 concurrent users
 - Butuh high availability (99.9%+ uptime)
 - Butuh auto-scaling
@@ -319,6 +334,7 @@ docker-compose -f deployments/docker-compose/docker-compose.yml logs -f
 ```
 
 **Setup dengan Reverse Proxy (Nginx/Caddy):**
+
 ```bash
 # Setup Nginx atau Caddy untuk HTTPS dan domain
 # Lihat docs/DEPLOYMENT.md untuk detail
@@ -327,6 +343,7 @@ docker-compose -f deployments/docker-compose/docker-compose.yml logs -f
 ### Kubernetes Deployment (Untuk Scale Besar)
 
 **Install Kubernetes & kubectl:**
+
 ```bash
 # Quick install
 chmod +x scripts/install-kubernetes.sh
@@ -338,6 +355,7 @@ chmod +x scripts/install-minikube.sh
 ```
 
 **Deploy Services:**
+
 ```bash
 # Create namespace
 kubectl create namespace unsri-backend
@@ -362,18 +380,35 @@ make test
 # Run tests with coverage
 make test-coverage
 
+# Run tests for specific service
+make test-service SERVICE=master-data
+
+# Run tests with race detector
+make test-race
+
 # Run specific service tests
 go test ./internal/auth/...
 ```
 
+**Test Status:**
+
+- ✅ 17 service modules with unit tests
+- ✅ All tests passing
+- ✅ Test coverage reporting configured
+- ✅ CI/CD automated testing
+
+Lihat [README_TESTING.md](./README_TESTING.md) untuk panduan lengkap testing.
+
 ### API Testing
 
 1. **Using Postman:**
+
    - Import collection dari `postman/UNSRI_Backend_API.postman_collection.json`
    - Set environment variables
    - Run requests
 
 2. **Using cURL:**
+
 ```bash
 # Register
 curl -X POST http://localhost:8080/api/v1/auth/register \
@@ -399,6 +434,7 @@ curl -X POST http://localhost:8080/api/v1/auth/login \
 Database menggunakan PostgreSQL dengan schema yang expandable untuk sistem akademik lengkap.
 
 **Core Tables:**
+
 - `users` - Data pengguna (mahasiswa, dosen, staff)
 - `attendances` - Data kehadiran
 - `schedules` - Jadwal kelas
@@ -470,6 +506,7 @@ curl http://localhost:8081/health  # Auth Service
 ### Logging
 
 All services use structured logging. Logs can be aggregated using:
+
 - ELK Stack (Elasticsearch, Logstash, Kibana)
 - Loki + Grafana
 - Cloud logging services
@@ -488,7 +525,32 @@ All services use structured logging. Logs can be aggregated using:
 
 ## 👥 Contributors
 
-- [Your Team Here]
+- **anop** - Module development, testing, CI/CD setup (2025-11-27)
+
+## 📝 Recent Updates
+
+### 2025-11-27 (Author: anop)
+
+**New Modules:**
+
+- ✅ Master Data Service (Port: 8096) - Study Programs, Academic Periods, Rooms
+- ✅ Leave Management Service (Port: 8097) - Leave requests, quotas, approvals
+- ✅ Enhanced Enrollment Module - Student enrollment workflow
+- ✅ Enhanced Work Attendance Module - Check-in/out, shift management
+
+**Testing:**
+
+- ✅ Unit tests for all 17 service modules
+- ✅ Test coverage reporting configured
+- ✅ All tests passing
+
+**CI/CD:**
+
+- ✅ GitHub Actions CI/CD workflows
+- ✅ Automated testing and deployment
+- ✅ Docker image building and pushing
+
+Lihat [CHANGELOG.md](./CHANGELOG.md) dan [UPDATE_LOG.md](./UPDATE_LOG.md) untuk detail lengkap.
 
 ## 📞 Support
 
@@ -504,6 +566,10 @@ All services use structured logging. Logs can be aggregated using:
 - [Services Status](./SERVICES_STATUS.md)
 - [API Documentation](./docs/API.md)
 - [Database Schema](./docs/DATABASE_SCHEMA.md)
+- [Testing Guide](./README_TESTING.md)
+- [Changelog](./CHANGELOG.md)
+- [Update Log](./UPDATE_LOG.md)
+- [Web Admin Design Guide](./WEB_ADMIN_DESIGN_GUIDE.md)
 
 ---
 

@@ -615,3 +615,458 @@ func (s *AttendanceService) DeleteSchedule(ctx context.Context, scheduleID strin
 	return s.repo.DeleteSchedule(ctx, scheduleID)
 }
 
+// ========== Work Attendance (HRIS) Service Methods ==========
+
+// CreateShiftPatternRequest represents create shift pattern request
+type CreateShiftPatternRequest struct {
+	ShiftName           string `json:"shift_name" binding:"required"`
+	ShiftCode           string `json:"shift_code" binding:"required"`
+	StartTime           string `json:"start_time" binding:"required"` // HH:MM format
+	EndTime             string `json:"end_time" binding:"required"`   // HH:MM format
+	BreakDurationMinutes *int  `json:"break_duration_minutes,omitempty"`
+	IsNightShift        bool   `json:"is_night_shift,omitempty"`
+}
+
+// CreateShiftPattern creates a new shift pattern
+func (s *AttendanceService) CreateShiftPattern(ctx context.Context, req CreateShiftPatternRequest) (*models.ShiftPattern, error) {
+	// Check if code already exists
+	_, err := s.repo.GetShiftPatternByCode(ctx, req.ShiftCode)
+	if err == nil {
+		return nil, apperrors.NewConflictError("shift pattern with code already exists")
+	}
+
+	// Parse times
+	startTime, err := time.Parse("15:04", req.StartTime)
+	if err != nil {
+		return nil, apperrors.NewValidationError("invalid start_time format, use HH:MM")
+	}
+
+	endTime, err := time.Parse("15:04", req.EndTime)
+	if err != nil {
+		return nil, apperrors.NewValidationError("invalid end_time format, use HH:MM")
+	}
+
+	shift := &models.ShiftPattern{
+		ShiftName:           req.ShiftName,
+		ShiftCode:           req.ShiftCode,
+		StartTime:           startTime,
+		EndTime:             endTime,
+		BreakDurationMinutes: req.BreakDurationMinutes,
+		IsNightShift:        req.IsNightShift,
+		IsActive:            true,
+	}
+
+	if err := s.repo.CreateShiftPattern(ctx, shift); err != nil {
+		return nil, apperrors.NewInternalError("failed to create shift pattern", err)
+	}
+
+	return shift, nil
+}
+
+// GetShiftPatternByID gets a shift pattern by ID
+func (s *AttendanceService) GetShiftPatternByID(ctx context.Context, id string) (*models.ShiftPattern, error) {
+	shift, err := s.repo.GetShiftPatternByID(ctx, id)
+	if err != nil {
+		return nil, apperrors.NewNotFoundError("shift pattern", id)
+	}
+	return shift, nil
+}
+
+// GetShiftPatternsRequest represents get shift patterns request
+type GetShiftPatternsRequest struct {
+	IsActive *bool `form:"is_active"`
+	Page     int   `form:"page,default=1"`
+	PerPage  int   `form:"per_page,default=20"`
+}
+
+// GetShiftPatterns gets all shift patterns
+func (s *AttendanceService) GetShiftPatterns(ctx context.Context, req GetShiftPatternsRequest) ([]models.ShiftPattern, int64, error) {
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	perPage := req.PerPage
+	if perPage < 1 {
+		perPage = 20
+	}
+
+	return s.repo.GetAllShiftPatterns(ctx, req.IsActive, perPage, (page-1)*perPage)
+}
+
+// UpdateShiftPatternRequest represents update shift pattern request
+type UpdateShiftPatternRequest struct {
+	ShiftName           *string `json:"shift_name,omitempty"`
+	StartTime           *string `json:"start_time,omitempty"`
+	EndTime             *string `json:"end_time,omitempty"`
+	BreakDurationMinutes *int  `json:"break_duration_minutes,omitempty"`
+	IsNightShift        *bool   `json:"is_night_shift,omitempty"`
+	IsActive            *bool   `json:"is_active,omitempty"`
+}
+
+// UpdateShiftPattern updates a shift pattern
+func (s *AttendanceService) UpdateShiftPattern(ctx context.Context, id string, req UpdateShiftPatternRequest) (*models.ShiftPattern, error) {
+	shift, err := s.repo.GetShiftPatternByID(ctx, id)
+	if err != nil {
+		return nil, apperrors.NewNotFoundError("shift pattern", id)
+	}
+
+	if req.ShiftName != nil {
+		shift.ShiftName = *req.ShiftName
+	}
+	if req.StartTime != nil {
+		startTime, err := time.Parse("15:04", *req.StartTime)
+		if err != nil {
+			return nil, apperrors.NewValidationError("invalid start_time format, use HH:MM")
+		}
+		shift.StartTime = startTime
+	}
+	if req.EndTime != nil {
+		endTime, err := time.Parse("15:04", *req.EndTime)
+		if err != nil {
+			return nil, apperrors.NewValidationError("invalid end_time format, use HH:MM")
+		}
+		shift.EndTime = endTime
+	}
+	if req.BreakDurationMinutes != nil {
+		shift.BreakDurationMinutes = req.BreakDurationMinutes
+	}
+	if req.IsNightShift != nil {
+		shift.IsNightShift = *req.IsNightShift
+	}
+	if req.IsActive != nil {
+		shift.IsActive = *req.IsActive
+	}
+
+	if err := s.repo.UpdateShiftPattern(ctx, shift); err != nil {
+		return nil, apperrors.NewInternalError("failed to update shift pattern", err)
+	}
+
+	return shift, nil
+}
+
+// DeleteShiftPattern deletes a shift pattern
+func (s *AttendanceService) DeleteShiftPattern(ctx context.Context, id string) error {
+	_, err := s.repo.GetShiftPatternByID(ctx, id)
+	if err != nil {
+		return apperrors.NewNotFoundError("shift pattern", id)
+	}
+	return s.repo.DeleteShiftPattern(ctx, id)
+}
+
+// CreateUserShiftRequest represents create user shift request
+type CreateUserShiftRequest struct {
+	UserID        string  `json:"user_id" binding:"required"`
+	ShiftID       string  `json:"shift_id" binding:"required"`
+	EffectiveFrom string  `json:"effective_from" binding:"required"` // YYYY-MM-DD
+	EffectiveUntil *string `json:"effective_until,omitempty"`         // YYYY-MM-DD
+}
+
+// CreateUserShift creates a new user shift assignment
+func (s *AttendanceService) CreateUserShift(ctx context.Context, req CreateUserShiftRequest) (*models.UserShift, error) {
+	// Parse dates
+	effectiveFrom, err := time.Parse("2006-01-02", req.EffectiveFrom)
+	if err != nil {
+		return nil, apperrors.NewValidationError("invalid effective_from format, use YYYY-MM-DD")
+	}
+
+	var effectiveUntil *time.Time
+	if req.EffectiveUntil != nil {
+		effUntil, err := time.Parse("2006-01-02", *req.EffectiveUntil)
+		if err != nil {
+			return nil, apperrors.NewValidationError("invalid effective_until format, use YYYY-MM-DD")
+		}
+		effectiveUntil = &effUntil
+	}
+
+	userShift := &models.UserShift{
+		UserID:        req.UserID,
+		ShiftID:       req.ShiftID,
+		EffectiveFrom: effectiveFrom,
+		EffectiveUntil: effectiveUntil,
+		IsActive:      true,
+	}
+
+	if err := s.repo.CreateUserShift(ctx, userShift); err != nil {
+		return nil, apperrors.NewInternalError("failed to create user shift", err)
+	}
+
+	return userShift, nil
+}
+
+// GetUserShiftsByUserID gets user shifts by user ID
+func (s *AttendanceService) GetUserShiftsByUserID(ctx context.Context, userID string, date *string) ([]models.UserShift, error) {
+	var datePtr *time.Time
+	if date != nil {
+		parsedDate, err := time.Parse("2006-01-02", *date)
+		if err != nil {
+			return nil, apperrors.NewValidationError("invalid date format, use YYYY-MM-DD")
+		}
+		datePtr = &parsedDate
+	}
+
+	return s.repo.GetUserShiftsByUserID(ctx, userID, datePtr)
+}
+
+// CreateWorkScheduleRequest represents create work schedule request
+type CreateWorkScheduleRequest struct {
+	UserID      string  `json:"user_id" binding:"required"`
+	ScheduleDate string `json:"schedule_date" binding:"required"` // YYYY-MM-DD
+	ShiftID     *string `json:"shift_id,omitempty"`
+	StartTime   string  `json:"start_time" binding:"required"` // HH:MM
+	EndTime     string  `json:"end_time" binding:"required"`   // HH:MM
+	WorkType    string  `json:"work_type,omitempty"`
+	Location    string  `json:"location,omitempty"`
+	IsHoliday   bool    `json:"is_holiday,omitempty"`
+}
+
+// CreateWorkSchedule creates a new work schedule
+func (s *AttendanceService) CreateWorkSchedule(ctx context.Context, req CreateWorkScheduleRequest) (*models.WorkSchedule, error) {
+	// Parse schedule date
+	scheduleDate, err := time.Parse("2006-01-02", req.ScheduleDate)
+	if err != nil {
+		return nil, apperrors.NewValidationError("invalid schedule_date format, use YYYY-MM-DD")
+	}
+
+	// Parse times
+	startTime, err := time.Parse("15:04", req.StartTime)
+	if err != nil {
+		return nil, apperrors.NewValidationError("invalid start_time format, use HH:MM")
+	}
+
+	endTime, err := time.Parse("15:04", req.EndTime)
+	if err != nil {
+		return nil, apperrors.NewValidationError("invalid end_time format, use HH:MM")
+	}
+
+	// Get day of week
+	dayOfWeek := int(scheduleDate.Weekday())
+	if dayOfWeek == 0 {
+		dayOfWeek = 7 // Sunday = 7
+	} else {
+		dayOfWeek-- // Monday = 1, Tuesday = 2, etc.
+	}
+
+	workSchedule := &models.WorkSchedule{
+		UserID:       req.UserID,
+		ScheduleDate: scheduleDate,
+		DayOfWeek:    &dayOfWeek,
+		ShiftID:      req.ShiftID,
+		StartTime:    startTime,
+		EndTime:      endTime,
+		WorkType:     req.WorkType,
+		Location:     req.Location,
+		IsHoliday:    req.IsHoliday,
+		IsActive:     true,
+	}
+
+	if err := s.repo.CreateWorkSchedule(ctx, workSchedule); err != nil {
+		return nil, apperrors.NewInternalError("failed to create work schedule", err)
+	}
+
+	return workSchedule, nil
+}
+
+// GetWorkSchedulesRequest represents get work schedules request
+type GetWorkSchedulesRequest struct {
+	UserID      string `form:"user_id"`
+	StartDate   string `form:"start_date"`
+	EndDate     string `form:"end_date"`
+	Page        int    `form:"page,default=1"`
+	PerPage     int    `form:"per_page,default=20"`
+}
+
+// GetWorkSchedules gets all work schedules
+func (s *AttendanceService) GetWorkSchedules(ctx context.Context, req GetWorkSchedulesRequest) ([]models.WorkSchedule, int64, error) {
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	perPage := req.PerPage
+	if perPage < 1 {
+		perPage = 20
+	}
+
+	var userIDPtr *string
+	if req.UserID != "" {
+		userIDPtr = &req.UserID
+	}
+
+	var startDatePtr, endDatePtr *time.Time
+	if req.StartDate != "" {
+		startDate, err := time.Parse("2006-01-02", req.StartDate)
+		if err == nil {
+			startDatePtr = &startDate
+		}
+	}
+	if req.EndDate != "" {
+		endDate, err := time.Parse("2006-01-02", req.EndDate)
+		if err == nil {
+			endDatePtr = &endDate
+		}
+	}
+
+	return s.repo.GetAllWorkSchedules(ctx, userIDPtr, startDatePtr, endDatePtr, perPage, (page-1)*perPage)
+}
+
+// CheckInRequest represents check-in request
+type CheckInRequest struct {
+	ScheduleID    *string  `json:"schedule_id,omitempty"`
+	Latitude      *float64 `json:"latitude,omitempty"`
+	Longitude     *float64 `json:"longitude,omitempty"`
+	IsViaUNSRIWiFi *bool   `json:"is_via_unsri_wifi,omitempty"`
+	Notes         string   `json:"notes,omitempty"`
+}
+
+// CheckIn performs check-in for work attendance
+func (s *AttendanceService) CheckIn(ctx context.Context, userID string, req CheckInRequest) (*models.WorkAttendanceRecord, error) {
+	now := time.Now()
+
+	// Check if already checked in today
+	existingRecord, err := s.repo.GetTodayWorkAttendanceRecord(ctx, userID, "CHECK_IN")
+	if err == nil && existingRecord != nil {
+		return nil, apperrors.NewConflictError("already checked in today")
+	}
+
+	// Get work schedule if provided
+	var schedule *models.WorkSchedule
+	if req.ScheduleID != nil {
+		schedule, err = s.repo.GetWorkScheduleByID(ctx, *req.ScheduleID)
+		if err != nil {
+			return nil, apperrors.NewNotFoundError("work schedule", *req.ScheduleID)
+		}
+	} else {
+		// Get today's schedule for user
+		schedules, err := s.repo.GetWorkSchedulesByUserID(ctx, userID, &now, &now)
+		if err == nil && len(schedules) > 0 {
+			schedule = &schedules[0]
+		}
+	}
+
+	// Determine status based on schedule
+	status := models.StatusCheckIn
+	if schedule != nil {
+		scheduleStartTime := time.Date(now.Year(), now.Month(), now.Day(),
+			schedule.StartTime.Hour(), schedule.StartTime.Minute(), 0, 0, now.Location())
+		if now.After(scheduleStartTime.Add(15 * time.Minute)) {
+			status = models.StatusLateIn
+		}
+	}
+
+	record := &models.WorkAttendanceRecord{
+		ScheduleID:      req.ScheduleID,
+		UserID:          userID,
+		AttendanceType:  "CHECK_IN",
+		RecordedAt:      now,
+		Status:          status,
+		IsViaUNSRIWiFi:  req.IsViaUNSRIWiFi,
+		Latitude:       req.Latitude,
+		Longitude:      req.Longitude,
+		Notes:          req.Notes,
+	}
+
+	if err := s.repo.CreateWorkAttendanceRecord(ctx, record); err != nil {
+		return nil, apperrors.NewInternalError("failed to create check-in record", err)
+	}
+
+	return record, nil
+}
+
+// CheckOutRequest represents check-out request
+type CheckOutRequest struct {
+	ScheduleID    *string  `json:"schedule_id,omitempty"`
+	Latitude      *float64 `json:"latitude,omitempty"`
+	Longitude     *float64 `json:"longitude,omitempty"`
+	IsViaUNSRIWiFi *bool   `json:"is_via_unsri_wifi,omitempty"`
+	Notes         string   `json:"notes,omitempty"`
+}
+
+// CheckOut performs check-out for work attendance
+func (s *AttendanceService) CheckOut(ctx context.Context, userID string, req CheckOutRequest) (*models.WorkAttendanceRecord, error) {
+	now := time.Now()
+
+	// Check if checked in today
+	checkInRecord, err := s.repo.GetTodayWorkAttendanceRecord(ctx, userID, "CHECK_IN")
+	if err != nil || checkInRecord == nil {
+		return nil, apperrors.NewValidationError("must check in first before check out")
+	}
+
+	// Check if already checked out today
+	existingRecord, err := s.repo.GetTodayWorkAttendanceRecord(ctx, userID, "CHECK_OUT")
+	if err == nil && existingRecord != nil {
+		return nil, apperrors.NewConflictError("already checked out today")
+	}
+
+	// Get work schedule
+	var schedule *models.WorkSchedule
+	if req.ScheduleID != nil {
+		schedule, err = s.repo.GetWorkScheduleByID(ctx, *req.ScheduleID)
+	} else if checkInRecord.ScheduleID != nil {
+		schedule, err = s.repo.GetWorkScheduleByID(ctx, *checkInRecord.ScheduleID)
+	}
+
+	// Determine status
+	status := models.StatusCheckOut
+	if schedule != nil {
+		scheduleEndTime := time.Date(now.Year(), now.Month(), now.Day(),
+			schedule.EndTime.Hour(), schedule.EndTime.Minute(), 0, 0, now.Location())
+		if now.Before(scheduleEndTime.Add(-15 * time.Minute)) {
+			status = models.StatusEarlyOut
+		}
+	}
+
+	record := &models.WorkAttendanceRecord{
+		ScheduleID:     req.ScheduleID,
+		UserID:         userID,
+		AttendanceType: "CHECK_OUT",
+		RecordedAt:     now,
+		Status:         status,
+		IsViaUNSRIWiFi: req.IsViaUNSRIWiFi,
+		Latitude:      req.Latitude,
+		Longitude:     req.Longitude,
+		Notes:         req.Notes,
+	}
+
+	if err := s.repo.CreateWorkAttendanceRecord(ctx, record); err != nil {
+		return nil, apperrors.NewInternalError("failed to create check-out record", err)
+	}
+
+	return record, nil
+}
+
+// GetWorkAttendanceRecordsRequest represents get work attendance records request
+type GetWorkAttendanceRecordsRequest struct {
+	UserID    string `form:"user_id"`
+	StartDate string `form:"start_date"`
+	EndDate   string `form:"end_date"`
+	Page      int    `form:"page,default=1"`
+	PerPage   int    `form:"per_page,default=20"`
+}
+
+// GetWorkAttendanceRecords gets work attendance records
+func (s *AttendanceService) GetWorkAttendanceRecords(ctx context.Context, req GetWorkAttendanceRecordsRequest) ([]models.WorkAttendanceRecord, int64, error) {
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	perPage := req.PerPage
+	if perPage < 1 {
+		perPage = 20
+	}
+
+	var startDatePtr, endDatePtr *time.Time
+	if req.StartDate != "" {
+		startDate, err := time.Parse("2006-01-02", req.StartDate)
+		if err == nil {
+			startDatePtr = &startDate
+		}
+	}
+	if req.EndDate != "" {
+		endDate, err := time.Parse("2006-01-02", req.EndDate)
+		if err == nil {
+			endDatePtr = &endDate
+		}
+	}
+
+	return s.repo.GetWorkAttendanceRecordsByUserID(ctx, req.UserID, startDatePtr, endDatePtr, perPage, (page-1)*perPage)
+}
+

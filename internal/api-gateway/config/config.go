@@ -22,6 +22,8 @@ type Config struct {
 	FileServiceURL        string
 	SearchServiceURL      string
 	ReportServiceURL      string
+	MasterDataServiceURL  string
+	LeaveServiceURL       string
 	LogLevel              string
 	JWTSecret             string
 }
@@ -45,6 +47,8 @@ func Load() *Config {
 	viper.SetDefault("FILE_SERVICE_URL", "http://localhost:8093")
 	viper.SetDefault("SEARCH_SERVICE_URL", "http://localhost:8094")
 	viper.SetDefault("REPORT_SERVICE_URL", "http://localhost:8095")
+	viper.SetDefault("MASTER_DATA_SERVICE_URL", "http://localhost:8096")
+	viper.SetDefault("LEAVE_SERVICE_URL", "http://localhost:8097")
 	viper.SetDefault("JWT_SECRET", "your-secret-key-change-in-production")
 
 	viper.AutomaticEnv()
@@ -67,6 +71,8 @@ func Load() *Config {
 		FileServiceURL:       viper.GetString("FILE_SERVICE_URL"),
 		SearchServiceURL:     viper.GetString("SEARCH_SERVICE_URL"),
 		ReportServiceURL:     viper.GetString("REPORT_SERVICE_URL"),
+		MasterDataServiceURL: viper.GetString("MASTER_DATA_SERVICE_URL"),
+		LeaveServiceURL:      viper.GetString("LEAVE_SERVICE_URL"),
 		JWTSecret:            viper.GetString("JWT_SECRET"),
 	}
 }

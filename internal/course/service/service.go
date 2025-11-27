@@ -245,3 +245,201 @@ func (s *CourseService) GetClassesByLecturer(ctx context.Context, lecturerID str
 	return s.repo.GetClassesByLecturerID(ctx, lecturerID)
 }
 
+// ========== Enrollment Service Methods ==========
+
+// CreateEnrollmentRequest represents create enrollment request
+type CreateEnrollmentRequest struct {
+	StudentID      string `json:"student_id" binding:"required"`
+	ClassID        string `json:"class_id" binding:"required"`
+	EnrollmentDate string `json:"enrollment_date" binding:"required"`
+	Notes          string `json:"notes,omitempty"`
+}
+
+// CreateEnrollment creates a new enrollment
+func (s *CourseService) CreateEnrollment(ctx context.Context, req CreateEnrollmentRequest) (*models.Enrollment, error) {
+	// Check if student already enrolled in this class
+	existingEnrollments, err := s.repo.GetEnrollmentsByStudentID(ctx, req.StudentID)
+	if err == nil {
+		for _, e := range existingEnrollments {
+			if e.ClassID == req.ClassID && (e.Status == "PENDING" || e.Status == "APPROVED") {
+				return nil, apperrors.NewConflictError("student already enrolled in this class")
+			}
+		}
+	}
+
+	// Check class capacity
+	class, err := s.repo.GetClassByID(ctx, req.ClassID)
+	if err != nil {
+		return nil, apperrors.NewNotFoundError("class", req.ClassID)
+	}
+
+	if class.Capacity > 0 && class.Enrolled >= class.Capacity {
+		return nil, apperrors.NewConflictError("class is full")
+	}
+
+	// Parse enrollment date
+	enrollmentDate, err := time.Parse("2006-01-02", req.EnrollmentDate)
+	if err != nil {
+		return nil, apperrors.NewValidationError("invalid enrollment_date format, use YYYY-MM-DD")
+	}
+
+	enrollment := &models.Enrollment{
+		StudentID:      req.StudentID,
+		ClassID:        req.ClassID,
+		EnrollmentDate: enrollmentDate,
+		Status:         "PENDING",
+		Notes:          req.Notes,
+	}
+
+	if err := s.repo.CreateEnrollment(ctx, enrollment); err != nil {
+		return nil, apperrors.NewInternalError("failed to create enrollment", err)
+	}
+
+	// Get enrollment with relations
+	return s.repo.GetEnrollmentByID(ctx, enrollment.ID)
+}
+
+// GetEnrollmentByID gets an enrollment by ID
+func (s *CourseService) GetEnrollmentByID(ctx context.Context, id string) (*models.Enrollment, error) {
+	enrollment, err := s.repo.GetEnrollmentByID(ctx, id)
+	if err != nil {
+		return nil, apperrors.NewNotFoundError("enrollment", id)
+	}
+	return enrollment, nil
+}
+
+// GetEnrollmentsRequest represents get enrollments request
+type GetEnrollmentsRequest struct {
+	StudentID string `form:"student_id"`
+	ClassID   string `form:"class_id"`
+	Status    string `form:"status"`
+	Page      int    `form:"page,default=1"`
+	PerPage   int    `form:"per_page,default=20"`
+}
+
+// GetEnrollments gets all enrollments with filters
+func (s *CourseService) GetEnrollments(ctx context.Context, req GetEnrollmentsRequest) ([]models.Enrollment, int64, error) {
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	perPage := req.PerPage
+	if perPage < 1 {
+		perPage = 20
+	}
+
+	var studentIDPtr, classIDPtr, statusPtr *string
+	if req.StudentID != "" {
+		studentIDPtr = &req.StudentID
+	}
+	if req.ClassID != "" {
+		classIDPtr = &req.ClassID
+	}
+	if req.Status != "" {
+		statusPtr = &req.Status
+	}
+
+	return s.repo.GetAllEnrollments(ctx, studentIDPtr, classIDPtr, statusPtr, perPage, (page-1)*perPage)
+}
+
+// GetEnrollmentsByStudent gets enrollments for a student
+func (s *CourseService) GetEnrollmentsByStudent(ctx context.Context, studentID string) ([]models.Enrollment, error) {
+	return s.repo.GetEnrollmentsByStudentID(ctx, studentID)
+}
+
+// GetEnrollmentsByClass gets enrollments for a class
+func (s *CourseService) GetEnrollmentsByClass(ctx context.Context, classID string) ([]models.Enrollment, error) {
+	return s.repo.GetEnrollmentsByClassID(ctx, classID)
+}
+
+// UpdateEnrollmentStatusRequest represents update enrollment status request
+type UpdateEnrollmentStatusRequest struct {
+	Status string `json:"status" binding:"required,oneof=PENDING APPROVED REJECTED COMPLETED DROPPED FAILED"`
+	Notes  string `json:"notes,omitempty"`
+}
+
+// UpdateEnrollmentStatus updates enrollment status (for approval/rejection)
+func (s *CourseService) UpdateEnrollmentStatus(ctx context.Context, id string, req UpdateEnrollmentStatusRequest) (*models.Enrollment, error) {
+	enrollment, err := s.repo.GetEnrollmentByID(ctx, id)
+	if err != nil {
+		return nil, apperrors.NewNotFoundError("enrollment", id)
+	}
+
+	oldStatus := enrollment.Status
+	enrollment.Status = req.Status
+	if req.Notes != "" {
+		enrollment.Notes = req.Notes
+	}
+
+	// Update class enrolled count
+	if req.Status == "APPROVED" && oldStatus != "APPROVED" {
+		class, err := s.repo.GetClassByID(ctx, enrollment.ClassID)
+		if err == nil {
+			class.Enrolled++
+			s.repo.UpdateClass(ctx, class)
+		}
+	} else if (oldStatus == "APPROVED" || oldStatus == "COMPLETED") && (req.Status == "REJECTED" || req.Status == "DROPPED") {
+		class, err := s.repo.GetClassByID(ctx, enrollment.ClassID)
+		if err == nil && class.Enrolled > 0 {
+			class.Enrolled--
+			s.repo.UpdateClass(ctx, class)
+		}
+	}
+
+	if err := s.repo.UpdateEnrollment(ctx, enrollment); err != nil {
+		return nil, apperrors.NewInternalError("failed to update enrollment", err)
+	}
+
+	return enrollment, nil
+}
+
+// UpdateEnrollmentGradeRequest represents update enrollment grade request
+type UpdateEnrollmentGradeRequest struct {
+	Grade string  `json:"grade,omitempty" binding:"omitempty,oneof=A B C D E"`
+	Score float64 `json:"score,omitempty"`
+	Notes string  `json:"notes,omitempty"`
+}
+
+// UpdateEnrollmentGrade updates enrollment grade and score
+func (s *CourseService) UpdateEnrollmentGrade(ctx context.Context, id string, req UpdateEnrollmentGradeRequest) (*models.Enrollment, error) {
+	enrollment, err := s.repo.GetEnrollmentByID(ctx, id)
+	if err != nil {
+		return nil, apperrors.NewNotFoundError("enrollment", id)
+	}
+
+	if req.Grade != "" {
+		enrollment.Grade = req.Grade
+	}
+	if req.Score > 0 {
+		enrollment.Score = req.Score
+	}
+	if req.Notes != "" {
+		enrollment.Notes = req.Notes
+	}
+
+	if err := s.repo.UpdateEnrollment(ctx, enrollment); err != nil {
+		return nil, apperrors.NewInternalError("failed to update enrollment", err)
+	}
+
+	return enrollment, nil
+}
+
+// DeleteEnrollment deletes an enrollment
+func (s *CourseService) DeleteEnrollment(ctx context.Context, id string) error {
+	enrollment, err := s.repo.GetEnrollmentByID(ctx, id)
+	if err != nil {
+		return apperrors.NewNotFoundError("enrollment", id)
+	}
+
+	// Update class enrolled count if approved
+	if enrollment.Status == "APPROVED" || enrollment.Status == "COMPLETED" {
+		class, err := s.repo.GetClassByID(ctx, enrollment.ClassID)
+		if err == nil && class.Enrolled > 0 {
+			class.Enrolled--
+			s.repo.UpdateClass(ctx, class)
+		}
+	}
+
+	return s.repo.DeleteEnrollment(ctx, id)
+}
+

@@ -1,0 +1,209 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: CI
+
+on:
+    push:
+        branches: [main, develop]
+    pull_request:
+        branches: [main, develop]
+
+env:
+    GO_VERSION: "1.24"
+    POSTGRES_VERSION: "15"
+
+jobs:
+    test:
+        name: Run Tests
+        runs-on: ubuntu-latest
+
+        services:
+            postgres:
+                image: postgres:15
+                env:
+                    POSTGRES_USER: unsri_user
+                    POSTGRES_PASSWORD: unsri_pass
+                    POSTGRES_DB: unsri_db_test
+                options: >-
+                    --health-cmd pg_isready
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+                ports:
+                    - 5432:5432
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version: ${{ env.GO_VERSION }}
+
+            - name: Cache Go modules
+              uses: actions/cache@v4
+              with:
+                  path: ~/go/pkg/mod
+                  key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+                  restore-keys: |
+                      ${{ runner.os }}-go-
+
+            - name: Install dependencies
+              run: go mod download
+
+            - name: Run linter
+              uses: golangci/golangci-lint-action@v4
+              with:
+                  version: latest
+                  args: --timeout=5m
+
+            - name: Run tests
+              env:
+                  DATABASE_HOST: localhost
+                  DATABASE_PORT: 5432
+                  DATABASE_USER: unsri_user
+                  DATABASE_PASSWORD: unsri_pass
+                  DATABASE_NAME: unsri_db_test
+                  DATABASE_SSLMODE: disable
+                  JWT_SECRET: test-secret-key
+              run: |
+                  go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+            - name: Upload coverage to Codecov
+              uses: codecov/codecov-action@v4
+              with:
+                  file: ./coverage.out
+                  flags: unittests
+                  name: codecov-umbrella
+                  fail_ci_if_error: false
+
+            - name: Generate coverage report
+              run: |
+                  go tool cover -html=coverage.out -o coverage.html
+
+            - name: Upload coverage report
+              uses: actions/upload-artifact@v4
+              with:
+                  name: coverage-report
+                  path: coverage.html
+
+    build:
+        name: Build Services
+        runs-on: ubuntu-latest
+        needs: test
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version: ${{ env.GO_VERSION }}
+
+            - name: Cache Go modules
+              uses: actions/cache@v4
+              with:
+                  path: ~/go/pkg/mod
+                  key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+                  restore-keys: |
+                      ${{ runner.os }}-go-
+
+            - name: Install dependencies
+              run: go mod download
+
+            - name: Build all services
+              run: |
+                  mkdir -p bin
+                  go build -o bin/api-gateway ./cmd/api-gateway
+                  go build -o bin/auth-service ./cmd/auth-service
+                  go build -o bin/user-service ./cmd/user-service
+                  go build -o bin/attendance-service ./cmd/attendance-service
+                  go build -o bin/schedule-service ./cmd/schedule-service
+                  go build -o bin/qr-service ./cmd/qr-service
+                  go build -o bin/course-service ./cmd/course-service
+                  go build -o bin/broadcast-service ./cmd/broadcast-service
+                  go build -o bin/notification-service ./cmd/notification-service
+                  go build -o bin/calendar-service ./cmd/calendar-service
+                  go build -o bin/location-service ./cmd/location-service
+                  go build -o bin/access-service ./cmd/access-service
+                  go build -o bin/quick-actions-service ./cmd/quick-actions-service
+                  go build -o bin/file-storage-service ./cmd/file-storage-service
+                  go build -o bin/search-service ./cmd/search-service
+                  go build -o bin/report-service ./cmd/report-service
+                  go build -o bin/master-data-service ./cmd/master-data-service
+                  go build -o bin/leave-service ./cmd/leave-service
+
+            - name: Upload build artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: binaries
+                  path: bin/*
+                  retention-days: 7
+
+    docker-build:
+        name: Build Docker Images
+        runs-on: ubuntu-latest
+        needs: test
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Login to Docker Hub
+              if: github.ref == 'refs/heads/main'
+              uses: docker/login-action@v3
+              with:
+                  username: ${{ secrets.DOCKER_USERNAME }}
+                  password: ${{ secrets.DOCKER_PASSWORD }}
+
+            - name: Build and push Docker images
+              uses: docker/build-push-action@v5
+              with:
+                  context: .
+                  file: ./deployments/docker/Dockerfile.api-gateway
+                  push: ${{ github.ref == 'refs/heads/main' }}
+                  tags: |
+                      ${{ secrets.DOCKER_USERNAME }}/unsri-api-gateway:latest
+                      ${{ secrets.DOCKER_USERNAME }}/unsri-api-gateway:${{ github.sha }}
+                  cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/unsri-api-gateway:latest
+                  cache-to: type=inline
+
+            - name: Build other services
+              run: |
+                  SERVICES=(
+                    "auth-service"
+                    "user-service"
+                    "attendance-service"
+                    "schedule-service"
+                    "qr-service"
+                    "course-service"
+                    "broadcast-service"
+                    "notification-service"
+                    "calendar-service"
+                    "location-service"
+                    "access-service"
+                    "quick-actions-service"
+                    "file-storage-service"
+                    "search-service"
+                    "report-service"
+                    "master-data-service"
+                    "leave-service"
+                  )
+
+                  for service in "${SERVICES[@]}"; do
+                    docker build \
+                      -f deployments/docker/Dockerfile.$service \
+                      -t ${{ secrets.DOCKER_USERNAME }}/unsri-$service:latest \
+                      -t ${{ secrets.DOCKER_USERNAME }}/unsri-$service:${{ github.sha }} \
+                      .
+                    
+                    if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+                      docker push ${{ secrets.DOCKER_USERNAME }}/unsri-$service:latest
+                      docker push ${{ secrets.DOCKER_USERNAME }}/unsri-$service:${{ github.sha }}
+                    fi
+                  done

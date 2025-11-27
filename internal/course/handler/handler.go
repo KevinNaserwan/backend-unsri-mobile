@@ -191,3 +191,138 @@ func (h *CourseHandler) GetClassesByLecturer(c *gin.Context) {
 	utils.SuccessResponse(c, 200, result)
 }
 
+// ========== Enrollment Handlers ==========
+
+// CreateEnrollment handles create enrollment request
+func (h *CourseHandler) CreateEnrollment(c *gin.Context) {
+	var req service.CreateEnrollmentRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, 400, err)
+		return
+	}
+
+	result, err := h.service.CreateEnrollment(c.Request.Context(), req)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, 201, result)
+}
+
+// GetEnrollment handles get enrollment by ID request
+func (h *CourseHandler) GetEnrollment(c *gin.Context) {
+	enrollmentID := c.Param("id")
+
+	result, err := h.service.GetEnrollmentByID(c.Request.Context(), enrollmentID)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, 200, result)
+}
+
+// GetEnrollments handles get enrollments request
+func (h *CourseHandler) GetEnrollments(c *gin.Context) {
+	var req service.GetEnrollmentsRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		utils.ErrorResponse(c, 400, err)
+		return
+	}
+
+	enrollments, total, err := h.service.GetEnrollments(c.Request.Context(), req)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	perPage := req.PerPage
+	if perPage < 1 {
+		perPage = 20
+	}
+
+	utils.PaginatedResponse(c, enrollments, page, perPage, total)
+}
+
+// GetEnrollmentsByStudent handles get enrollments by student request
+func (h *CourseHandler) GetEnrollmentsByStudent(c *gin.Context) {
+	studentID := c.Param("studentId")
+
+	result, err := h.service.GetEnrollmentsByStudent(c.Request.Context(), studentID)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, 200, result)
+}
+
+// GetEnrollmentsByClass handles get enrollments by class request
+func (h *CourseHandler) GetEnrollmentsByClass(c *gin.Context) {
+	classID := c.Param("classId")
+
+	result, err := h.service.GetEnrollmentsByClass(c.Request.Context(), classID)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, 200, result)
+}
+
+// UpdateEnrollmentStatus handles update enrollment status request (approve/reject)
+func (h *CourseHandler) UpdateEnrollmentStatus(c *gin.Context) {
+	enrollmentID := c.Param("id")
+
+	var req service.UpdateEnrollmentStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, 400, err)
+		return
+	}
+
+	result, err := h.service.UpdateEnrollmentStatus(c.Request.Context(), enrollmentID, req)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, 200, result)
+}
+
+// UpdateEnrollmentGrade handles update enrollment grade request
+func (h *CourseHandler) UpdateEnrollmentGrade(c *gin.Context) {
+	enrollmentID := c.Param("id")
+
+	var req service.UpdateEnrollmentGradeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, 400, err)
+		return
+	}
+
+	result, err := h.service.UpdateEnrollmentGrade(c.Request.Context(), enrollmentID, req)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, 200, result)
+}
+
+// DeleteEnrollment handles delete enrollment request
+func (h *CourseHandler) DeleteEnrollment(c *gin.Context) {
+	enrollmentID := c.Param("id")
+
+	err := h.service.DeleteEnrollment(c.Request.Context(), enrollmentID)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, 200, gin.H{"message": "Enrollment deleted successfully"})
+}
+

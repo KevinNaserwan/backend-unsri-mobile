@@ -99,6 +99,16 @@ func (h *ProxyHandler) ProxyReport(c *gin.Context) {
 	h.proxyRequest(c, h.cfg.ReportServiceURL)
 }
 
+// ProxyMasterData proxies requests to master data service
+func (h *ProxyHandler) ProxyMasterData(c *gin.Context) {
+	h.proxyRequest(c, h.cfg.MasterDataServiceURL)
+}
+
+// ProxyLeave proxies requests to leave service
+func (h *ProxyHandler) ProxyLeave(c *gin.Context) {
+	h.proxyRequest(c, h.cfg.LeaveServiceURL)
+}
+
 // proxyRequest proxies a request to the target service
 func (h *ProxyHandler) proxyRequest(c *gin.Context, targetURL string) {
 	// Create new request

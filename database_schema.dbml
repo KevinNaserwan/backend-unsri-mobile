@@ -1,0 +1,593 @@
+// UNSRI Backend Database Schema (DBML)
+// Academic Module + HRIS Module
+// Focus: Attendance System
+
+Enum UserRole {
+  STUDENT
+  LECTURER
+  STAFF
+}
+
+Enum SemesterType {
+  GANJIL
+  GENAP
+  PENDEK
+}
+
+Enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+Enum SessionStatus {
+  OPEN
+  CLOSED
+  EXPIRED
+}
+
+Enum EnrollmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  DROPPED
+  FAILED
+}
+
+Enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  EXCUSED
+  SICK
+}
+
+Enum WorkAttendanceStatus {
+  CHECK_IN
+  CHECK_OUT
+  LATE_IN
+  EARLY_OUT
+  ABSENT
+  ON_LEAVE
+  SICK_LEAVE
+}
+
+Enum LeaveType {
+  ANNUAL_LEAVE
+  SICK_LEAVE
+  PERSONAL_LEAVE
+  EMERGENCY_LEAVE
+  UNPAID_LEAVE
+  OTHER
+}
+
+Enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+Enum TargetType {
+  ALL
+  FACULTY
+  STUDY_PROGRAM
+  CLASS
+  USER
+  ROLE
+}
+
+/* CORE USER MANAGEMENT */
+Table users {
+  user_id uuid [pk]
+  email varchar(255) [unique, not null]
+  password_hash varchar(255) [not null]
+  role UserRole [not null]
+  full_name varchar(255)
+  profile_photo_url varchar(255)
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+/* ACADEMIC - STUDENTS */
+Table students {
+  student_user_id uuid [pk, ref: > users.user_id]
+  nim varchar(20) [unique, not null]
+  faculty varchar(100)
+  study_program_id uuid [ref: > study_programs.id]
+  enrollment_year int
+  date_of_birth date
+  advisor_lecturer_id uuid [ref: > lecturers.lecturer_user_id]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+/* HRIS - LECTURERS */
+Table lecturers {
+  lecturer_user_id uuid [pk, ref: > users.user_id]
+  nidn varchar(20) [unique, not null]
+  faculty varchar(100)
+  study_program_id uuid [ref: > study_programs.id]
+  employee_id varchar(50)
+  position varchar(100)
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+/* HRIS - STAFF */
+Table staff {
+  staff_user_id uuid [pk, ref: > users.user_id]
+  nip varchar(50) [unique, not null]
+  employee_id varchar(50) [unique]
+  jabatan varchar(255)
+  unit varchar(255)
+  division varchar(255)
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+/* MASTER DATA */
+Table study_programs {
+  id uuid [pk]
+  code varchar(50) [unique, not null]
+  name varchar(255) [not null]
+  name_en varchar(255)
+  faculty varchar(255)
+  degree_level varchar(50)
+  accreditation varchar(10)
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table academic_periods {
+  id uuid [pk]
+  code varchar(50) [unique, not null]
+  name varchar(255) [not null]
+  academic_year varchar(20) [not null]
+  semester_type SemesterType [not null]
+  start_date date [not null]
+  end_date date [not null]
+  registration_start date
+  registration_end date
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table courses {
+  course_id uuid [pk]
+  course_code varchar(20) [unique, not null]
+  name varchar(255) [not null]
+  name_en varchar(255)
+  credits int [not null]
+  study_program_id uuid [ref: > study_programs.id]
+  description text
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table classes {
+  class_id uuid [pk]
+  course_id uuid [not null, ref: > courses.course_id]
+  lecturer_user_id uuid [not null, ref: > lecturers.lecturer_user_id]
+  academic_period_id uuid [ref: > academic_periods.id]
+  academic_year varchar(10) [not null]
+  semester SemesterType [not null]
+  class_code varchar(50)
+  capacity integer
+  enrolled integer
+  assistant_lecturer_id uuid [ref: > lecturers.lecturer_user_id]
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table class_schedules {
+  schedule_id uuid [pk]
+  class_id uuid [not null, ref: > classes.class_id]
+  day_of_week DayOfWeek [not null]
+  start_time time [not null]
+  end_time time [not null]
+  room_id uuid [ref: > rooms.id]
+  room varchar(50)
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table rooms {
+  id uuid [pk]
+  code varchar(50) [unique, not null]
+  name varchar(255) [not null]
+  building varchar(255)
+  floor integer
+  capacity integer
+  room_type varchar(50)
+  facilities text
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table enrollments {
+  enrollment_id uuid [pk]
+  student_user_id uuid [not null, ref: > students.student_user_id]
+  class_id uuid [not null, ref: > classes.class_id]
+  enrollment_date date [not null]
+  status EnrollmentStatus
+  grade varchar(2)
+  score decimal(5,2)
+  notes text
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+/* ATTENDANCE - ACADEMIC (STUDENTS) */
+Table attendance_sessions {
+  session_id uuid [pk]
+  schedule_id uuid [not null, ref: > class_schedules.schedule_id]
+  session_date date [not null]
+  qr_code_data varchar(255) [unique, not null]
+  expires_at timestamp [not null]
+  status SessionStatus
+  created_by uuid [not null, ref: > users.user_id]
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table attendance_records {
+  record_id uuid [pk]
+  session_id uuid [not null, ref: > attendance_sessions.session_id]
+  student_user_id uuid [not null, ref: > students.student_user_id]
+  scanned_at timestamp [not null]
+  status AttendanceStatus [not null]
+  is_via_unsri_wifi boolean
+  latitude double
+  longitude double
+  notes text
+  created_at timestamp
+  updated_at timestamp
+}
+
+/* ATTENDANCE - HRIS (LECTURER & STAFF) */
+Table shift_patterns {
+  shift_id uuid [pk]
+  shift_name varchar(100) [not null]
+  shift_code varchar(50) [unique, not null]
+  start_time time [not null]
+  end_time time [not null]
+  break_duration_minutes integer
+  is_night_shift boolean
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table user_shifts {
+  assignment_id uuid [pk]
+  user_id uuid [not null, ref: > users.user_id]
+  shift_id uuid [not null, ref: > shift_patterns.shift_id]
+  effective_from date [not null]
+  effective_until date
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table work_schedules {
+  schedule_id uuid [pk]
+  user_id uuid [not null, ref: > users.user_id]
+  schedule_date date [not null]
+  day_of_week DayOfWeek
+  shift_id uuid [ref: > shift_patterns.shift_id]
+  start_time time [not null]
+  end_time time [not null]
+  work_type varchar(50)
+  location varchar(255)
+  is_holiday boolean
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table work_attendance_sessions {
+  session_id uuid [pk]
+  schedule_id uuid [ref: > work_schedules.schedule_id]
+  session_date date [not null]
+  qr_code_data varchar(255) [unique]
+  expires_at timestamp
+  status SessionStatus
+  created_by uuid [ref: > users.user_id]
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table work_attendance_records {
+  record_id uuid [pk]
+  session_id uuid [ref: > work_attendance_sessions.session_id]
+  schedule_id uuid [ref: > work_schedules.schedule_id]
+  user_id uuid [not null, ref: > users.user_id]
+  attendance_type varchar(20) [not null]
+  recorded_at timestamp [not null]
+  status WorkAttendanceStatus [not null]
+  is_via_unsri_wifi boolean
+  latitude double
+  longitude double
+  geofence_id uuid [ref: > geofences.id]
+  notes text
+  created_at timestamp
+  updated_at timestamp
+}
+
+/* LEAVE MANAGEMENT */
+Table leave_requests {
+  leave_id uuid [pk]
+  user_id uuid [not null, ref: > users.user_id]
+  leave_type LeaveType [not null]
+  start_date date [not null]
+  end_date date [not null]
+  total_days decimal(5,2) [not null]
+  reason text [not null]
+  status LeaveStatus
+  approved_by uuid [ref: > users.user_id]
+  approved_at timestamp
+  rejection_reason text
+  attachment_url varchar(500)
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table leave_quotas {
+  quota_id uuid [pk]
+  user_id uuid [not null, ref: > users.user_id]
+  leave_type LeaveType [not null]
+  year integer [not null]
+  total_quota decimal(5,2) [not null]
+  used_quota decimal(5,2)
+  remaining_quota decimal(5,2)
+  created_at timestamp
+  updated_at timestamp
+}
+
+/* ATTENDANCE REPORTING */
+Table attendance_summaries {
+  summary_id uuid [pk]
+  user_id uuid [not null, ref: > users.user_id]
+  summary_month integer [not null]
+  summary_year integer [not null]
+  total_work_days integer
+  total_present_days integer
+  total_absent_days integer
+  total_late_days integer
+  total_leave_days decimal(5,2)
+  total_overtime_hours decimal(5,2)
+  attendance_percentage decimal(5,2)
+  last_calculated_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table student_attendance_summaries {
+  summary_id uuid [pk]
+  student_user_id uuid [not null, ref: > students.student_user_id]
+  class_id uuid [not null, ref: > classes.class_id]
+  academic_period_id uuid [ref: > academic_periods.id]
+  total_sessions integer
+  present_count integer
+  late_count integer
+  absent_count integer
+  excused_count integer
+  sick_count integer
+  attendance_percentage decimal(5,2)
+  last_calculated_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+/* BROADCAST & NOTIFICATION */
+Table broadcasts {
+  broadcast_id uuid [pk]
+  title varchar(255) [not null]
+  content text
+  author_name varchar(100)
+  created_by uuid [not null, ref: > users.user_id]
+  is_published boolean
+  published_at timestamp
+  scheduled_at timestamp
+  expires_at timestamp
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table broadcast_targets {
+  broadcast_id uuid [pk, ref: > broadcasts.broadcast_id]
+  target_type TargetType [pk]
+  target_value varchar(255) [pk]
+  created_at timestamp
+}
+
+Table notifications {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.user_id]
+  title varchar(255) [not null]
+  message text [not null]
+  type varchar(20) [not null]
+  is_read boolean
+  read_at timestamp
+  data json
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table device_tokens {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.user_id]
+  token text [unique, not null]
+  platform varchar(20)
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+/* CALENDAR & EVENTS */
+Table academic_events {
+  id uuid [pk]
+  title varchar(255) [not null]
+  description text
+  event_type varchar(50)
+  start_date timestamp [not null]
+  end_date timestamp [not null]
+  is_all_day boolean
+  location varchar(255)
+  created_by uuid [not null, ref: > users.user_id]
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+/* LOCATION & ACCESS CONTROL */
+Table geofences {
+  id uuid [pk]
+  name varchar(255) [not null]
+  description text
+  latitude double [not null]
+  longitude double [not null]
+  radius double [not null]
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table location_history {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.user_id]
+  type varchar(20) [not null]
+  latitude double [not null]
+  longitude double [not null]
+  geofence_id uuid [ref: > geofences.id]
+  is_valid boolean
+  created_at timestamp
+}
+
+Table access_logs {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.user_id]
+  gate_id varchar(100)
+  access_type varchar(20) [not null]
+  is_allowed boolean
+  reason text
+  qr_code_id uuid
+  created_at timestamp
+}
+
+Table access_permissions {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.user_id]
+  gate_id varchar(100) [not null]
+  is_allowed boolean
+  valid_from timestamp
+  valid_until timestamp
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table user_access_qrs {
+  id uuid [pk]
+  user_id uuid [unique, not null, ref: > users.user_id]
+  qr_token varchar(255) [unique, not null]
+  is_active boolean
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+/* TRANSPORTATION */
+Table bus_locations {
+  bus_id varchar(50) [pk]
+  current_latitude decimal(10,8)
+  current_longitude decimal(11,8)
+  last_update timestamp
+  route_name varchar(100)
+  is_active boolean
+}
+
+/* QUICK ACTIONS & FILE STORAGE */
+Table transcripts {
+  id uuid [pk]
+  student_user_id uuid [not null, ref: > students.student_user_id]
+  semester varchar(20) [not null]
+  ipk decimal(3,2)
+  data json
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table krss {
+  id uuid [pk]
+  student_user_id uuid [not null, ref: > students.student_user_id]
+  semester varchar(20) [not null]
+  status varchar(20)
+  data json
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table bimbingans {
+  id uuid [pk]
+  student_user_id uuid [not null, ref: > students.student_user_id]
+  lecturer_user_id uuid [not null, ref: > lecturers.lecturer_user_id]
+  topic varchar(255)
+  notes text
+  date timestamp [not null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table files {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.user_id]
+  file_name varchar(255) [not null]
+  original_name varchar(255) [not null]
+  file_type varchar(50)
+  mime_type varchar(100)
+  size bigint [not null]
+  path varchar(500) [not null]
+  url varchar(500)
+  is_public boolean
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp
+}

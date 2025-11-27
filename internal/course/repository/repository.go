@@ -192,8 +192,54 @@ func (r *CourseRepository) GetEnrollmentsByStudentID(ctx context.Context, studen
 	return enrollments, nil
 }
 
+// GetAllEnrollments gets all enrollments with filters
+func (r *CourseRepository) GetAllEnrollments(ctx context.Context, studentID *string, classID *string, status *string, limit, offset int) ([]models.Enrollment, int64, error) {
+	var enrollments []models.Enrollment
+	var total int64
+
+	query := r.db.WithContext(ctx).Model(&models.Enrollment{})
+
+	if studentID != nil {
+		query = query.Where("student_id = ?", *studentID)
+	}
+	if classID != nil {
+		query = query.Where("class_id = ?", *classID)
+	}
+	if status != nil {
+		query = query.Where("status = ?", *status)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.Preload("Student").Preload("Class").Preload("Class.Course").Limit(limit).Offset(offset).Order("enrollment_date DESC").Find(&enrollments).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return enrollments, total, nil
+}
+
+// GetEnrollmentsByClassID gets enrollments for a class
+func (r *CourseRepository) GetEnrollmentsByClassID(ctx context.Context, classID string) ([]models.Enrollment, error) {
+	var enrollments []models.Enrollment
+	if err := r.db.WithContext(ctx).
+		Where("class_id = ?", classID).
+		Preload("Student").
+		Order("enrollment_date DESC").
+		Find(&enrollments).Error; err != nil {
+		return nil, err
+	}
+	return enrollments, nil
+}
+
 // UpdateEnrollment updates an enrollment
 func (r *CourseRepository) UpdateEnrollment(ctx context.Context, enrollment *models.Enrollment) error {
 	return r.db.WithContext(ctx).Save(enrollment).Error
+}
+
+// DeleteEnrollment soft deletes an enrollment
+func (r *CourseRepository) DeleteEnrollment(ctx context.Context, id string) error {
+	return r.db.WithContext(ctx).Delete(&models.Enrollment{}, "id = ?", id).Error
 }
 

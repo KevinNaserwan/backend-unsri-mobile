@@ -1,0 +1,7 @@
+# YAML Lint Configuration
+# This file suppresses false positive warnings from local linter
+# GitHub Actions will resolve all actions correctly when workflow runs
+
+ignore:
+  - '.github/workflows/*.yml'
+

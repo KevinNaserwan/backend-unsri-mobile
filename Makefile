@@ -19,6 +19,8 @@ build:
 	@go build -o bin/file-storage-service ./cmd/file-storage-service
 	@go build -o bin/search-service ./cmd/search-service
 	@go build -o bin/report-service ./cmd/report-service
+	@go build -o bin/master-data-service ./cmd/master-data-service
+	@go build -o bin/leave-service ./cmd/leave-service
 	@echo "Build complete!"
 
 run-user-service:
@@ -76,6 +78,12 @@ run-search-service:
 run-report-service:
 	@go run ./cmd/report-service
 
+run-master-data-service:
+	@go run ./cmd/master-data-service
+
+run-leave-service:
+	@go run ./cmd/leave-service
+
 swagger:
 	@swag init -g cmd/api-gateway/main.go
 	@echo "Swagger docs generated in docs/ folder"
@@ -98,6 +106,20 @@ run-all:
 # Run tests
 test:
 	@go test -v ./...
+
+# Run tests with coverage
+test-coverage:
+	@go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+	@go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
+
+# Run tests for specific service
+test-service:
+	@go test -v ./internal/$(SERVICE)/...
+
+# Run tests with race detector
+test-race:
+	@go test -v -race ./...
 
 # Clean build artifacts
 clean:
