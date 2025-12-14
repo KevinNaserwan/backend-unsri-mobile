@@ -821,7 +821,24 @@ func (h *ProxyHandler) ProxyLeave(c *gin.Context) {
 // proxyRequest proxies a request to the target service
 func (h *ProxyHandler) proxyRequest(c *gin.Context, targetURL string) {
 	// Create new request
-	req, err := http.NewRequest(c.Request.Method, targetURL+c.Request.RequestURI, c.Request.Body)
+	// Remove /api/v1 prefix as services likely don't expect it if they are mounted at root or have their own prefix reasoning
+	// However, looking at the previous logic: targetURL + c.Request.RequestURI
+	// If targetURL is http://master-data-service:8096 and URI is /api/v1/academic-periods/
+	// The result is http://master-data-service:8096/api/v1/academic-periods/
+	// If the service is listening on /, it might expect /academic-periods/ or /api/v1/academic-periods/
+	// Let's assume the services are standardized.
+	// BUT, specifically for the issue: "failed to reach service", 502 Bad Gateway usually means connection refused or host not found.
+
+	// Let's simply fix the path if needed, but first, logging the error in proxyRequest is missing.
+
+	targetPath := c.Request.RequestURI
+	// If the services are running without /api/v1 prefix internally, we should strip it.
+	// Most microservices frameworks (like Gin in your services) probably set up routes like /academic-periods or /api/v1/academic-periods.
+	// Let's assume they map 1:1 for now.
+
+	url := targetURL + targetPath
+
+	req, err := http.NewRequest(c.Request.Method, url, c.Request.Body)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create request"})
 		return
@@ -834,9 +851,10 @@ func (h *ProxyHandler) proxyRequest(c *gin.Context, targetURL string) {
 		}
 	}
 
-	// Forward request
+	// Send request
 	resp, err := h.client.Do(req)
 	if err != nil {
+		h.logger.Errorf("Failed to proxy request to %s: %v", url, err)
 		c.JSON(http.StatusBadGateway, gin.H{"error": "failed to reach service"})
 		return
 	}
