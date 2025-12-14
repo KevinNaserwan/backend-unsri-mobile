@@ -66,10 +66,10 @@ jobs:
           for service in "${SERVICES[@]}"; do
             docker build \
               -f deployments/docker/Dockerfile.$service \
-              -t ghcr.io/${{ env.OWNER_LC }}/unsri-$service:staging \
+              -t ghcr.io/${{ env.OWNER_LC }}/unsri-$service:latest \
               -t ghcr.io/${{ env.OWNER_LC }}/unsri-$service:${{ github.sha }} \
               .
-            docker push ghcr.io/${{ env.OWNER_LC }}/unsri-$service:staging
+            docker push ghcr.io/${{ env.OWNER_LC }}/unsri-$service:latest
             docker push ghcr.io/${{ env.OWNER_LC }}/unsri-$service:${{ github.sha }}
           done
 

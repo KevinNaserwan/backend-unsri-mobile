@@ -374,15 +374,21 @@ func (s *CourseService) UpdateEnrollmentStatus(ctx context.Context, id string, r
 	// Update class enrolled count
 	if req.Status == "APPROVED" && oldStatus != "APPROVED" {
 		class, err := s.repo.GetClassByID(ctx, enrollment.ClassID)
-		if err == nil {
-			class.Enrolled++
-			if err := s.repo.UpdateClass(ctx, class); err != nil {
-				return nil, apperrors.NewInternalError("failed to update class enrolled count", err)
-			}
+		if err != nil {
+			return nil, apperrors.NewInternalError("failed to get class", err)
+		}
+
+		class.Enrolled++
+		if err := s.repo.UpdateClass(ctx, class); err != nil {
+			return nil, apperrors.NewInternalError("failed to update class enrolled count", err)
 		}
 	} else if (oldStatus == "APPROVED" || oldStatus == "COMPLETED") && (req.Status == "REJECTED" || req.Status == "DROPPED") {
 		class, err := s.repo.GetClassByID(ctx, enrollment.ClassID)
-		if err == nil && class.Enrolled > 0 {
+		if err != nil {
+			return nil, apperrors.NewInternalError("failed to get class", err)
+		}
+
+		if class.Enrolled > 0 {
 			class.Enrolled--
 			if err := s.repo.UpdateClass(ctx, class); err != nil {
 				return nil, apperrors.NewInternalError("failed to update class enrolled count", err)
@@ -438,7 +444,10 @@ func (s *CourseService) DeleteEnrollment(ctx context.Context, id string) error {
 	// Update class enrolled count if approved
 	if enrollment.Status == "APPROVED" || enrollment.Status == "COMPLETED" {
 		class, err := s.repo.GetClassByID(ctx, enrollment.ClassID)
-		if err == nil && class.Enrolled > 0 {
+		if err != nil {
+			// Log error but continue
+			_ = err
+		} else if class.Enrolled > 0 {
 			class.Enrolled--
 			if err := s.repo.UpdateClass(ctx, class); err != nil {
 				// Log error but continue as the enrollment is already deleted
