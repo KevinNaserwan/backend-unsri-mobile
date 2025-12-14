@@ -64,7 +64,7 @@ func (s *QRService) GenerateQR(ctx context.Context, createdBy string, req Genera
 		Type:       string(qrType),
 	}
 
-	qrImage, err := qrcode.GenerateQRCode(qrData)
+	_, err := qrcode.GenerateQRCode(qrData)
 	if err != nil {
 		return nil, apperrors.NewInternalError("failed to generate QR code", err)
 	}

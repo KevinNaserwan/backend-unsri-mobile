@@ -163,7 +163,7 @@ func (s *FileStorageService) UploadAvatar(ctx context.Context, userID string, re
 	oldAvatar, _ := s.repo.GetAvatarByUserID(ctx, userID)
 	if oldAvatar != nil {
 		_ = os.Remove(oldAvatar.Path)
-		s.repo.DeleteFile(ctx, oldAvatar.ID)
+		_ = s.repo.DeleteFile(ctx, oldAvatar.ID)
 	}
 
 	uploadReq := UploadFileRequest{
