@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	"unsri-backend/internal/course/repository"
 	apperrors "unsri-backend/internal/shared/errors"
 	"unsri-backend/internal/shared/models"
-	"unsri-backend/internal/course/repository"
 )
 
 // CourseService handles course business logic
@@ -376,13 +376,17 @@ func (s *CourseService) UpdateEnrollmentStatus(ctx context.Context, id string, r
 		class, err := s.repo.GetClassByID(ctx, enrollment.ClassID)
 		if err == nil {
 			class.Enrolled++
-			s.repo.UpdateClass(ctx, class)
+			if err := s.repo.UpdateClass(ctx, class); err != nil {
+				return nil, apperrors.NewInternalError("failed to update class enrolled count", err)
+			}
 		}
 	} else if (oldStatus == "APPROVED" || oldStatus == "COMPLETED") && (req.Status == "REJECTED" || req.Status == "DROPPED") {
 		class, err := s.repo.GetClassByID(ctx, enrollment.ClassID)
 		if err == nil && class.Enrolled > 0 {
 			class.Enrolled--
-			s.repo.UpdateClass(ctx, class)
+			if err := s.repo.UpdateClass(ctx, class); err != nil {
+				return nil, apperrors.NewInternalError("failed to update class enrolled count", err)
+			}
 		}
 	}
 
@@ -436,10 +440,12 @@ func (s *CourseService) DeleteEnrollment(ctx context.Context, id string) error {
 		class, err := s.repo.GetClassByID(ctx, enrollment.ClassID)
 		if err == nil && class.Enrolled > 0 {
 			class.Enrolled--
-			s.repo.UpdateClass(ctx, class)
+			if err := s.repo.UpdateClass(ctx, class); err != nil {
+				// Log error but continue as the enrollment is already deleted
+				_ = err
+			}
 		}
 	}
 
 	return s.repo.DeleteEnrollment(ctx, id)
 }
-

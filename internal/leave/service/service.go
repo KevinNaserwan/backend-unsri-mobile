@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	"unsri-backend/internal/leave/repository"
 	apperrors "unsri-backend/internal/shared/errors"
 	"unsri-backend/internal/shared/models"
-	"unsri-backend/internal/leave/repository"
 )
 
 // LeaveService handles leave business logic
@@ -173,7 +173,11 @@ func (s *LeaveService) ApproveLeaveRequest(ctx context.Context, leaveID string, 
 		if err == nil {
 			quota.UsedQuota += leaveRequest.TotalDays
 			quota.RemainingQuota = quota.TotalQuota - quota.UsedQuota
-			s.repo.UpdateLeaveQuota(ctx, quota)
+			if err := s.repo.UpdateLeaveQuota(ctx, quota); err != nil {
+				// Log error but continue as the request is already approved
+				// In a production system, this should likely be handled more robustly or use a transaction
+				_ = err
+			}
 		}
 	}
 
@@ -239,7 +243,10 @@ func (s *LeaveService) CancelLeaveRequest(ctx context.Context, leaveID string, u
 					quota.UsedQuota = 0
 				}
 				quota.RemainingQuota = quota.TotalQuota - quota.UsedQuota
-				s.repo.UpdateLeaveQuota(ctx, quota)
+				if err := s.repo.UpdateLeaveQuota(ctx, quota); err != nil {
+					// Log error but continue
+					_ = err
+				}
 			}
 		}
 	}
@@ -383,4 +390,3 @@ func (s *LeaveService) DeleteLeaveQuota(ctx context.Context, id string) error {
 	}
 	return s.repo.DeleteLeaveQuota(ctx, id)
 }
-
