@@ -1004,11 +1004,13 @@ func (s *AttendanceService) CheckOut(ctx context.Context, userID string, req Che
 		schedule, err = s.repo.GetWorkScheduleByID(ctx, *req.ScheduleID)
 		if err != nil {
 			// Schedule not found is acceptable, proceed with basic record
+			_ = err
 		}
 	} else if checkInRecord.ScheduleID != nil {
 		schedule, err = s.repo.GetWorkScheduleByID(ctx, *checkInRecord.ScheduleID)
 		if err != nil {
 			// Schedule not found is acceptable, proceed with basic record
+			_ = err
 		}
 	}
 
