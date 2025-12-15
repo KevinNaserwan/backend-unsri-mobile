@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"unsri-backend/internal/access/service"
 	"unsri-backend/internal/shared/logger"
@@ -25,7 +27,7 @@ func NewAccessHandler(service *service.AccessService, logger logger.Logger) *Acc
 func (h *AccessHandler) ValidateQR(c *gin.Context) {
 	var req service.ValidateQRRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -35,14 +37,14 @@ func (h *AccessHandler) ValidateQR(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetAccessHistory handles get access history request
 func (h *AccessHandler) GetAccessHistory(c *gin.Context) {
 	var req service.GetAccessHistoryRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -68,7 +70,7 @@ func (h *AccessHandler) GetAccessHistory(c *gin.Context) {
 func (h *AccessHandler) LogAccess(c *gin.Context) {
 	var req service.LogAccessRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -91,14 +93,14 @@ func (h *AccessHandler) GetAccessPermissions(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // CreateAccessPermission handles create access permission request
 func (h *AccessHandler) CreateAccessPermission(c *gin.Context) {
 	var req service.CreateAccessPermissionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 

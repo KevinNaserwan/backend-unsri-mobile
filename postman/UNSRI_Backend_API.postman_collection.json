@@ -1585,21 +1585,13 @@
         {
           "name": "Generate Access QR",
           "request": {
-            "method": "POST",
+            "method": "GET",
             "header": [
               {
                 "key": "Authorization",
                 "value": "Bearer {{access_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"duration\": 525600\n}"
-            },
             "url": {
               "raw": "{{base_url}}/api/v1/qr/access/generate",
               "host": ["{{base_url}}"],
@@ -1736,6 +1728,1169 @@
       ]
     },
     {
+      "name": "Schedules",
+      "item": [
+        {
+          "name": "Get Schedules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/schedules?page=1&per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "schedules"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Today Schedules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/schedules/today",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "schedules", "today"]
+            }
+          }
+        },
+        {
+          "name": "Get Upcoming Schedules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/schedules/upcoming",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "schedules", "upcoming"]
+            }
+          }
+        },
+        {
+          "name": "Get Calendar View",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/schedules/calendar/:year/:month",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "schedules", "calendar", ":year", ":month"],
+              "variable": [
+                {
+                  "key": "year",
+                  "value": "2024"
+                },
+                {
+                  "key": "month",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Schedule by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/schedules/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "schedules", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<schedule_id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Schedule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": \"<course_id>\",\n  \"room_id\": \"<room_id>\",\n  \"day_of_week\": \"MONDAY\",\n  \"start_time\": \"08:00:00\",\n  \"end_time\": \"10:00:00\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/schedules",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "schedules"]
+            }
+          }
+        },
+        {
+          "name": "Update Schedule",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_time\": \"09:00:00\",\n  \"end_time\": \"11:00:00\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/schedules/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "schedules", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<schedule_id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Schedule",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/schedules/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "schedules", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<schedule_id>"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Calendar",
+      "item": [
+        {
+          "name": "Get Events",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendar/events?page=1&per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calendar", "events"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Upcoming Events",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendar/events/upcoming",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calendar", "events", "upcoming"]
+            }
+          }
+        },
+        {
+          "name": "Get Events by Month",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendar/events/month/:year/:month",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "calendar",
+                "events",
+                "month",
+                ":year",
+                ":month"
+              ],
+              "variable": [
+                {
+                  "key": "year",
+                  "value": "2024"
+                },
+                {
+                  "key": "month",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Event by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendar/events/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calendar", "events", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<event_id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Ujian Tengah Semester\",\n  \"description\": \"UTS Semester Ganjil 2024/2025\",\n  \"event_date\": \"2024-10-15\",\n  \"event_type\": \"EXAM\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendar/events",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calendar", "events"]
+            }
+          }
+        },
+        {
+          "name": "Update Event",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Ujian Tengah Semester Updated\",\n  \"description\": \"UTS Updated\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendar/events/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calendar", "events", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<event_id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Event",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/calendar/events/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "calendar", "events", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<event_id>"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Broadcasts",
+      "item": [
+        {
+          "name": "Get Broadcasts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/broadcasts?page=1&per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "broadcasts"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get General Broadcasts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/broadcasts/general",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "broadcasts", "general"]
+            }
+          }
+        },
+        {
+          "name": "Get Class Broadcasts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/broadcasts/class",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "broadcasts", "class"]
+            }
+          }
+        },
+        {
+          "name": "Get Broadcast by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/broadcasts/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "broadcasts", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<broadcast_id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Broadcast",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Pengumuman Penting\",\n  \"message\": \"Ini adalah pengumuman penting untuk semua mahasiswa\",\n  \"broadcast_type\": \"GENERAL\",\n  \"target_audience\": \"ALL\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/broadcasts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "broadcasts"]
+            }
+          }
+        },
+        {
+          "name": "Update Broadcast",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Pengumuman Penting Updated\",\n  \"message\": \"Updated message\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/broadcasts/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "broadcasts", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<broadcast_id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Broadcast",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/broadcasts/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "broadcasts", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<broadcast_id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Schedule Broadcast",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduled_at\": \"2024-12-25T10:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/broadcasts/:id/schedule",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "broadcasts", ":id", "schedule"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<broadcast_id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Broadcasts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"pengumuman\",\n  \"page\": 1,\n  \"per_page\": 20\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/broadcasts/search",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "broadcasts", "search"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Send Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"<user_id>\",\n  \"title\": \"Notifikasi Baru\",\n  \"message\": \"Anda memiliki notifikasi baru\",\n  \"type\": \"INFO\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/notifications/send",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "notifications", "send"]
+            }
+          }
+        },
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/notifications?page=1&per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "notifications"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark as Read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/notifications/:id/read",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "notifications", ":id", "read"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<notification_id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark All as Read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/notifications/read-all",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "notifications", "read-all"]
+            }
+          }
+        },
+        {
+          "name": "Register Device Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_token\": \"<device_fcm_token>\",\n  \"platform\": \"android\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/notifications/register-device",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "notifications", "register-device"]
+            }
+          }
+        },
+        {
+          "name": "Unregister Device Token",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/notifications/device/:token",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "notifications", "device", ":token"],
+              "variable": [
+                {
+                  "key": "token",
+                  "value": "<device_token>"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Access Control",
+      "item": [
+        {
+          "name": "Validate QR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"qr_code\": \"<qr_code_data>\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/access/qr/validate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "access", "qr", "validate"]
+            }
+          }
+        },
+        {
+          "name": "Get Access History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/access/history?page=1&per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "access", "history"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Log Access",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"<user_id>\",\n  \"gate_id\": \"<gate_id>\",\n  \"access_type\": \"ENTRY\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/access/log",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "access", "log"]
+            }
+          }
+        },
+        {
+          "name": "Get Access Permissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/access/permissions/:userId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "access", "permissions", ":userId"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "<user_id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Access Permission",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"<user_id>\",\n  \"gate_id\": \"<gate_id>\",\n  \"permission_type\": \"FULL_ACCESS\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/access/permissions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "access", "permissions"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Quick Actions",
+      "item": [
+        {
+          "name": "Get Quick Actions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/quick-actions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "quick-actions"]
+            }
+          }
+        },
+        {
+          "name": "Get Transcript",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/quick-actions/transcript/:studentId",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "quick-actions",
+                "transcript",
+                ":studentId"
+              ],
+              "variable": [
+                {
+                  "key": "studentId",
+                  "value": "<student_id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get KRS",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/quick-actions/krs/:studentId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "quick-actions", "krs", ":studentId"],
+              "variable": [
+                {
+                  "key": "studentId",
+                  "value": "<student_id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Bimbingans",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/quick-actions/bimbingan",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "quick-actions", "bimbingan"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "File Storage",
+      "item": [
+        {
+          "name": "Upload File",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "category",
+                  "value": "document",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/upload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", "upload"]
+            }
+          }
+        },
+        {
+          "name": "Get Files",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/files?page=1&per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get File by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<file_id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Download File",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/:id/download",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", ":id", "download"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<file_id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete File",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "<file_id>"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Avatar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/avatar",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", "avatar"]
+            }
+          }
+        },
+        {
+          "name": "Upload Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "document_type",
+                  "value": "transcript",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/files/document",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "files", "document"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "Reports",
       "item": [
         {
@@ -1802,7 +2957,7 @@
   "variable": [
     {
       "key": "base_url",
-      "value": "http://localhost:8080",
+      "value": "https://backend.parkir-dishub-palembang.com",
       "type": "string"
     },
     {

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -29,7 +30,7 @@ func (h *AttendanceHandler) GenerateQR(c *gin.Context) {
 
 	var req service.GenerateQRRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -39,7 +40,7 @@ func (h *AttendanceHandler) GenerateQR(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // ScanQR handles QR code scan request
@@ -48,7 +49,7 @@ func (h *AttendanceHandler) ScanQR(c *gin.Context) {
 
 	var req service.ScanQRRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -58,7 +59,7 @@ func (h *AttendanceHandler) ScanQR(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetAttendances handles get attendances request
@@ -68,7 +69,7 @@ func (h *AttendanceHandler) GetAttendances(c *gin.Context) {
 
 	var req service.GetAttendancesRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -101,7 +102,7 @@ func (h *AttendanceHandler) CreateManualAttendance(c *gin.Context) {
 
 	var req service.ManualAttendanceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -111,7 +112,7 @@ func (h *AttendanceHandler) CreateManualAttendance(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // UpdateAttendance handles update attendance request
@@ -120,7 +121,7 @@ func (h *AttendanceHandler) UpdateAttendance(c *gin.Context) {
 
 	var req service.UpdateAttendanceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -130,7 +131,7 @@ func (h *AttendanceHandler) UpdateAttendance(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetStatistics handles get attendance statistics request
@@ -161,7 +162,7 @@ func (h *AttendanceHandler) GetStatistics(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetOverview handles get attendance overview request
@@ -175,7 +176,7 @@ func (h *AttendanceHandler) GetOverview(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetByCourse handles get attendance by course request
@@ -198,7 +199,7 @@ func (h *AttendanceHandler) GetByCourse(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetByStudent handles get attendance by student request
@@ -221,7 +222,7 @@ func (h *AttendanceHandler) GetByStudent(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // TapIn handles tap in request for campus attendance
@@ -230,7 +231,7 @@ func (h *AttendanceHandler) TapIn(c *gin.Context) {
 
 	var req service.TapInRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -240,7 +241,7 @@ func (h *AttendanceHandler) TapIn(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // TapOut handles tap out request for campus attendance
@@ -249,7 +250,7 @@ func (h *AttendanceHandler) TapOut(c *gin.Context) {
 
 	var req service.TapInRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -259,14 +260,14 @@ func (h *AttendanceHandler) TapOut(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // CreateSchedule handles create schedule request
 func (h *AttendanceHandler) CreateSchedule(c *gin.Context) {
 	var req service.CreateScheduleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -276,14 +277,14 @@ func (h *AttendanceHandler) CreateSchedule(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // GetSchedules handles get schedules request
 func (h *AttendanceHandler) GetSchedules(c *gin.Context) {
 	var req service.GetSchedulesRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -315,7 +316,7 @@ func (h *AttendanceHandler) GetSchedule(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // UpdateSchedule handles update schedule request
@@ -324,7 +325,7 @@ func (h *AttendanceHandler) UpdateSchedule(c *gin.Context) {
 
 	var req service.UpdateScheduleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -334,7 +335,7 @@ func (h *AttendanceHandler) UpdateSchedule(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // DeleteSchedule handles delete schedule request
@@ -379,7 +380,7 @@ func (h *AttendanceHandler) GetTodaySchedules(c *gin.Context) {
 func (h *AttendanceHandler) CreateShiftPattern(c *gin.Context) {
 	var req service.CreateShiftPatternRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -389,7 +390,7 @@ func (h *AttendanceHandler) CreateShiftPattern(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // GetShiftPattern handles get shift pattern by ID request
@@ -402,14 +403,14 @@ func (h *AttendanceHandler) GetShiftPattern(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetShiftPatterns handles get shift patterns request
 func (h *AttendanceHandler) GetShiftPatterns(c *gin.Context) {
 	var req service.GetShiftPatternsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -437,7 +438,7 @@ func (h *AttendanceHandler) UpdateShiftPattern(c *gin.Context) {
 
 	var req service.UpdateShiftPatternRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -447,7 +448,7 @@ func (h *AttendanceHandler) UpdateShiftPattern(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // DeleteShiftPattern handles delete shift pattern request
@@ -467,7 +468,7 @@ func (h *AttendanceHandler) DeleteShiftPattern(c *gin.Context) {
 func (h *AttendanceHandler) CreateUserShift(c *gin.Context) {
 	var req service.CreateUserShiftRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -477,7 +478,7 @@ func (h *AttendanceHandler) CreateUserShift(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // GetUserShifts handles get user shifts request
@@ -496,14 +497,14 @@ func (h *AttendanceHandler) GetUserShifts(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // CreateWorkSchedule handles create work schedule request
 func (h *AttendanceHandler) CreateWorkSchedule(c *gin.Context) {
 	var req service.CreateWorkScheduleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -513,14 +514,14 @@ func (h *AttendanceHandler) CreateWorkSchedule(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // GetWorkSchedules handles get work schedules request
 func (h *AttendanceHandler) GetWorkSchedules(c *gin.Context) {
 	var req service.GetWorkSchedulesRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -548,7 +549,7 @@ func (h *AttendanceHandler) CheckIn(c *gin.Context) {
 
 	var req service.CheckInRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -558,7 +559,7 @@ func (h *AttendanceHandler) CheckIn(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // CheckOut handles work check-out request
@@ -567,7 +568,7 @@ func (h *AttendanceHandler) CheckOut(c *gin.Context) {
 
 	var req service.CheckOutRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -577,14 +578,14 @@ func (h *AttendanceHandler) CheckOut(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // GetWorkAttendanceRecords handles get work attendance records request
 func (h *AttendanceHandler) GetWorkAttendanceRecords(c *gin.Context) {
 	var req service.GetWorkAttendanceRecordsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 

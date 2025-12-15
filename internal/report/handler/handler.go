@@ -1,11 +1,12 @@
 package handler
 
 import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
 	"unsri-backend/internal/report/service"
 	"unsri-backend/internal/shared/logger"
 	"unsri-backend/internal/shared/utils"
-
-	"github.com/gin-gonic/gin"
 )
 
 // ReportHandler handles HTTP requests for reports
@@ -26,7 +27,7 @@ func NewReportHandler(service *service.ReportService, logger logger.Logger) *Rep
 func (h *ReportHandler) GetAttendanceReport(c *gin.Context) {
 	var req service.AttendanceReportRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -43,14 +44,14 @@ func (h *ReportHandler) GetAttendanceReport(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetAcademicReport handles get academic report request
 func (h *ReportHandler) GetAcademicReport(c *gin.Context) {
 	var req service.AcademicReportRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -67,14 +68,14 @@ func (h *ReportHandler) GetAcademicReport(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetCourseReport handles get course report request
 func (h *ReportHandler) GetCourseReport(c *gin.Context) {
 	var req service.CourseReportRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -84,14 +85,14 @@ func (h *ReportHandler) GetCourseReport(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetDailyReport handles get daily report request
 func (h *ReportHandler) GetDailyReport(c *gin.Context) {
 	var req service.DailyReportRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -101,5 +102,5 @@ func (h *ReportHandler) GetDailyReport(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }

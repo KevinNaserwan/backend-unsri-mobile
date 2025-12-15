@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"unsri-backend/internal/leave/service"
@@ -31,7 +32,7 @@ func (h *LeaveHandler) CreateLeaveRequest(c *gin.Context) {
 
 	var req service.CreateLeaveRequestRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -41,7 +42,7 @@ func (h *LeaveHandler) CreateLeaveRequest(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // GetLeaveRequest handles get leave request by ID request
@@ -54,14 +55,14 @@ func (h *LeaveHandler) GetLeaveRequest(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetLeaveRequests handles get leave requests request
 func (h *LeaveHandler) GetLeaveRequests(c *gin.Context) {
 	var req service.GetLeaveRequestsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -105,7 +106,7 @@ func (h *LeaveHandler) GetLeaveRequestsByUser(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // ApproveLeaveRequest handles approve leave request
@@ -115,7 +116,7 @@ func (h *LeaveHandler) ApproveLeaveRequest(c *gin.Context) {
 
 	var req service.ApproveLeaveRequestRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -125,7 +126,7 @@ func (h *LeaveHandler) ApproveLeaveRequest(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // RejectLeaveRequest handles reject leave request
@@ -135,7 +136,7 @@ func (h *LeaveHandler) RejectLeaveRequest(c *gin.Context) {
 
 	var req service.RejectLeaveRequestRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -145,7 +146,7 @@ func (h *LeaveHandler) RejectLeaveRequest(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // CancelLeaveRequest handles cancel leave request
@@ -159,7 +160,7 @@ func (h *LeaveHandler) CancelLeaveRequest(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // DeleteLeaveRequest handles delete leave request
@@ -172,7 +173,7 @@ func (h *LeaveHandler) DeleteLeaveRequest(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, gin.H{"message": "Leave request deleted successfully"})
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Leave request deleted successfully"})
 }
 
 // ========== Leave Quota Handlers ==========
@@ -181,7 +182,7 @@ func (h *LeaveHandler) DeleteLeaveRequest(c *gin.Context) {
 func (h *LeaveHandler) CreateLeaveQuota(c *gin.Context) {
 	var req service.CreateLeaveQuotaRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -191,7 +192,7 @@ func (h *LeaveHandler) CreateLeaveQuota(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // GetLeaveQuota handles get leave quota by ID request
@@ -204,14 +205,14 @@ func (h *LeaveHandler) GetLeaveQuota(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetLeaveQuotas handles get leave quotas request
 func (h *LeaveHandler) GetLeaveQuotas(c *gin.Context) {
 	var req service.GetLeaveQuotasRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -252,7 +253,7 @@ func (h *LeaveHandler) GetLeaveQuotasByUser(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // UpdateLeaveQuota handles update leave quota request
@@ -261,7 +262,7 @@ func (h *LeaveHandler) UpdateLeaveQuota(c *gin.Context) {
 
 	var req service.UpdateLeaveQuotaRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -271,7 +272,7 @@ func (h *LeaveHandler) UpdateLeaveQuota(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // DeleteLeaveQuota handles delete leave quota request
@@ -284,6 +285,6 @@ func (h *LeaveHandler) DeleteLeaveQuota(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, gin.H{"message": "Leave quota deleted successfully"})
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Leave quota deleted successfully"})
 }
 

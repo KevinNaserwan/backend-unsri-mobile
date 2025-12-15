@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -27,7 +28,7 @@ func NewScheduleHandler(service *service.ScheduleService, logger logger.Logger) 
 func (h *ScheduleHandler) CreateSchedule(c *gin.Context) {
 	var req service.CreateScheduleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -37,7 +38,7 @@ func (h *ScheduleHandler) CreateSchedule(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // GetSchedule handles get schedule by ID request
@@ -50,14 +51,14 @@ func (h *ScheduleHandler) GetSchedule(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetSchedules handles get schedules request
 func (h *ScheduleHandler) GetSchedules(c *gin.Context) {
 	var req service.GetSchedulesRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -90,7 +91,7 @@ func (h *ScheduleHandler) GetTodaySchedules(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetUpcomingSchedules handles get upcoming schedules request
@@ -111,7 +112,7 @@ func (h *ScheduleHandler) GetUpcomingSchedules(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetCalendarView handles get calendar view request
@@ -135,7 +136,7 @@ func (h *ScheduleHandler) GetCalendarView(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // UpdateSchedule handles update schedule request
@@ -144,7 +145,7 @@ func (h *ScheduleHandler) UpdateSchedule(c *gin.Context) {
 
 	var req service.UpdateScheduleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -154,7 +155,7 @@ func (h *ScheduleHandler) UpdateSchedule(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // DeleteSchedule handles delete schedule request
@@ -167,6 +168,6 @@ func (h *ScheduleHandler) DeleteSchedule(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, gin.H{"message": "Schedule deleted successfully"})
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Schedule deleted successfully"})
 }
 

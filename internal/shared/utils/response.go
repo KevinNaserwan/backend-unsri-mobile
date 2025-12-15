@@ -1,9 +1,12 @@
 package utils
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"unsri-backend/internal/shared/errors"
 )
 
@@ -17,8 +20,9 @@ type Response struct {
 
 // ErrorInfo represents error information
 type ErrorInfo struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
+	Code    string                 `json:"code"`
+	Message string                 `json:"message"`
+	Details map[string]interface{} `json:"details,omitempty"`
 }
 
 // Meta represents pagination or metadata
@@ -42,7 +46,62 @@ func ErrorResponse(c *gin.Context, statusCode int, err error) {
 	var appErr *errors.AppError
 	var ok bool
 
+	// Handle validation errors from gin
+	if validationErr, ok := err.(validator.ValidationErrors); ok {
+		details := make(map[string]interface{})
+		var messages []string
+
+		for _, fieldErr := range validationErr {
+			field := strings.ToLower(fieldErr.Field())
+			tag := fieldErr.Tag()
+			
+			var message string
+			switch tag {
+			case "required":
+				message = fmt.Sprintf("%s is required", field)
+			case "email":
+				message = fmt.Sprintf("%s must be a valid email", field)
+			case "min":
+				message = fmt.Sprintf("%s must be at least %s characters", field, fieldErr.Param())
+			case "max":
+				message = fmt.Sprintf("%s must be at most %s characters", field, fieldErr.Param())
+			case "oneof":
+				message = fmt.Sprintf("%s must be one of: %s", field, fieldErr.Param())
+			default:
+				message = fmt.Sprintf("%s is invalid", field)
+			}
+			
+			details[field] = message
+			messages = append(messages, message)
+		}
+
+		appErr = &errors.AppError{
+			Code:    errors.ErrCodeValidationFailed,
+			Message: "Validation failed: " + strings.Join(messages, "; "),
+		}
+
+		c.JSON(http.StatusBadRequest, Response{
+			Success: false,
+			Error: &ErrorInfo{
+				Code:    appErr.Code,
+				Message: appErr.Message,
+				Details: details,
+			},
+		})
+		return
+	}
+
+	// Handle gin binding errors
+	if ginErr, ok := err.(*gin.Error); ok {
+		if validationErr, ok := ginErr.Err.(validator.ValidationErrors); ok {
+			ErrorResponse(c, statusCode, validationErr)
+			return
+		}
+	}
+
+	// Handle standard errors
 	if appErr, ok = err.(*errors.AppError); !ok {
+		// Convert to AppError
 		appErr = errors.NewInternalError("Internal server error", err)
 		statusCode = http.StatusInternalServerError
 	}
@@ -67,6 +126,41 @@ func ErrorResponse(c *gin.Context, statusCode int, err error) {
 			Message: appErr.Message,
 		},
 	})
+}
+
+// ValidationErrorResponse sends a validation error response with field details
+func ValidationErrorResponse(c *gin.Context, err error) {
+	ErrorResponse(c, http.StatusBadRequest, err)
+}
+
+// BadRequestResponse sends a bad request error response
+func BadRequestResponse(c *gin.Context, message string) {
+	ErrorResponse(c, http.StatusBadRequest, errors.NewBadRequestError(message))
+}
+
+// NotFoundResponse sends a not found error response
+func NotFoundResponse(c *gin.Context, resource string, id string) {
+	ErrorResponse(c, http.StatusNotFound, errors.NewNotFoundError(resource, id))
+}
+
+// UnauthorizedResponse sends an unauthorized error response
+func UnauthorizedResponse(c *gin.Context, message string) {
+	ErrorResponse(c, http.StatusUnauthorized, errors.NewUnauthorizedError(message))
+}
+
+// ForbiddenResponse sends a forbidden error response
+func ForbiddenResponse(c *gin.Context, message string) {
+	ErrorResponse(c, http.StatusForbidden, errors.NewForbiddenError(message))
+}
+
+// ConflictResponse sends a conflict error response
+func ConflictResponse(c *gin.Context, message string) {
+	ErrorResponse(c, http.StatusConflict, errors.NewConflictError(message))
+}
+
+// InternalErrorResponse sends an internal server error response
+func InternalErrorResponse(c *gin.Context, message string, err error) {
+	ErrorResponse(c, http.StatusInternalServerError, errors.NewInternalError(message, err))
 }
 
 // PaginatedResponse sends a paginated response

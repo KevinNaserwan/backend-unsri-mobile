@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -29,7 +30,7 @@ func (h *CalendarHandler) CreateEvent(c *gin.Context) {
 
 	var req service.CreateEventRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -39,7 +40,7 @@ func (h *CalendarHandler) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // GetEvent handles get event by ID request
@@ -52,14 +53,14 @@ func (h *CalendarHandler) GetEvent(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetEvents handles get events request
 func (h *CalendarHandler) GetEvents(c *gin.Context) {
 	var req service.GetEventsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -99,7 +100,7 @@ func (h *CalendarHandler) GetEventsByMonth(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetUpcomingEvents handles get upcoming events request
@@ -118,7 +119,7 @@ func (h *CalendarHandler) GetUpcomingEvents(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // UpdateEvent handles update event request
@@ -127,7 +128,7 @@ func (h *CalendarHandler) UpdateEvent(c *gin.Context) {
 
 	var req service.UpdateEventRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -137,7 +138,7 @@ func (h *CalendarHandler) UpdateEvent(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // DeleteEvent handles delete event request
@@ -150,6 +151,6 @@ func (h *CalendarHandler) DeleteEvent(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, gin.H{"message": "Event deleted successfully"})
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Event deleted successfully"})
 }
 

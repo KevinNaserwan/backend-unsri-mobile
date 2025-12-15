@@ -33,7 +33,7 @@ func (h *FileStorageHandler) UploadFile(c *gin.Context) {
 
 	file, err := c.FormFile("file")
 	if err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.BadRequestResponse(c, "File is required")
 		return
 	}
 
@@ -49,7 +49,7 @@ func (h *FileStorageHandler) UploadFile(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // GetFile handles get file request
@@ -62,7 +62,7 @@ func (h *FileStorageHandler) GetFile(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetFiles handles get files request
@@ -71,7 +71,7 @@ func (h *FileStorageHandler) GetFiles(c *gin.Context) {
 
 	var req service.GetFilesRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -104,7 +104,7 @@ func (h *FileStorageHandler) DeleteFile(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, gin.H{"message": "File deleted successfully"})
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "File deleted successfully"})
 }
 
 // DownloadFile handles file download request
@@ -126,7 +126,7 @@ func (h *FileStorageHandler) UploadAvatar(c *gin.Context) {
 
 	file, err := c.FormFile("file")
 	if err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.BadRequestResponse(c, "File is required")
 		return
 	}
 
@@ -140,7 +140,7 @@ func (h *FileStorageHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // UploadDocument handles document upload request
@@ -149,7 +149,7 @@ func (h *FileStorageHandler) UploadDocument(c *gin.Context) {
 
 	file, err := c.FormFile("file")
 	if err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.BadRequestResponse(c, "File is required")
 		return
 	}
 
@@ -164,6 +164,6 @@ func (h *FileStorageHandler) UploadDocument(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 

@@ -1,12 +1,13 @@
 package handler
 
 import (
-	"errors"
+	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"unsri-backend/internal/auth/service"
 	"unsri-backend/internal/shared/logger"
 	"unsri-backend/internal/shared/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 // AuthHandler handles HTTP requests for authentication
@@ -27,7 +28,7 @@ func NewAuthHandler(service *service.AuthService, logger logger.Logger) *AuthHan
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req service.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -37,14 +38,14 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // Register handles registration request
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req service.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -54,14 +55,14 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // RefreshToken handles refresh token request
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
 	var req service.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -71,14 +72,14 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // VerifyToken handles token verification request
 func (h *AuthHandler) VerifyToken(c *gin.Context) {
 	token := c.GetHeader("Authorization")
 	if token == "" {
-		utils.ErrorResponse(c, 401, errors.New("authorization header required"))
+		utils.UnauthorizedResponse(c, "Authorization header required")
 		return
 	}
 
@@ -93,6 +94,5 @@ func (h *AuthHandler) VerifyToken(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
-

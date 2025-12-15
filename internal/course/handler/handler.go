@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"unsri-backend/internal/course/service"
 	"unsri-backend/internal/shared/logger"
@@ -25,7 +27,7 @@ func NewCourseHandler(service *service.CourseService, logger logger.Logger) *Cou
 func (h *CourseHandler) CreateCourse(c *gin.Context) {
 	var req service.CreateCourseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -35,7 +37,7 @@ func (h *CourseHandler) CreateCourse(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // GetCourse handles get course by ID request
@@ -48,14 +50,14 @@ func (h *CourseHandler) GetCourse(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetCourses handles get courses request
 func (h *CourseHandler) GetCourses(c *gin.Context) {
 	var req service.GetCoursesRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -83,7 +85,7 @@ func (h *CourseHandler) UpdateCourse(c *gin.Context) {
 
 	var req service.UpdateCourseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -93,7 +95,7 @@ func (h *CourseHandler) UpdateCourse(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // DeleteCourse handles delete course request

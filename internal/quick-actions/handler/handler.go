@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -33,7 +34,7 @@ func (h *QuickActionsHandler) GetQuickActions(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetTranscript handles get transcript request
@@ -46,7 +47,7 @@ func (h *QuickActionsHandler) GetTranscript(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetKRS handles get KRS request
@@ -65,7 +66,7 @@ func (h *QuickActionsHandler) GetKRS(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetBimbingans handles get bimbingans request
@@ -86,6 +87,6 @@ func (h *QuickActionsHandler) GetBimbingans(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 

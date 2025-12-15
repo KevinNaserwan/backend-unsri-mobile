@@ -29,6 +29,8 @@ var (
 	ErrCodeInternalError    = "INTERNAL_ERROR"
 	ErrCodeValidationFailed = "VALIDATION_FAILED"
 	ErrCodeConflict         = "CONFLICT"
+	ErrCodeTooManyRequests  = "TOO_MANY_REQUESTS"
+	ErrCodeUnprocessableEntity = "UNPROCESSABLE_ENTITY"
 )
 
 // Error constructors
@@ -78,6 +80,20 @@ func NewValidationError(message string) *AppError {
 func NewConflictError(message string) *AppError {
 	return &AppError{
 		Code:    ErrCodeConflict,
+		Message: message,
+	}
+}
+
+func NewTooManyRequestsError(message string) *AppError {
+	return &AppError{
+		Code:    ErrCodeTooManyRequests,
+		Message: message,
+	}
+}
+
+func NewUnprocessableEntityError(message string) *AppError {
+	return &AppError{
+		Code:    ErrCodeUnprocessableEntity,
 		Message: message,
 	}
 }

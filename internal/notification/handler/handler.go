@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"unsri-backend/internal/notification/service"
 	"unsri-backend/internal/shared/logger"
@@ -25,7 +27,7 @@ func NewNotificationHandler(service *service.NotificationService, logger logger.
 func (h *NotificationHandler) SendNotification(c *gin.Context) {
 	var req service.SendNotificationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -35,7 +37,7 @@ func (h *NotificationHandler) SendNotification(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // GetNotifications handles get notifications request
@@ -44,7 +46,7 @@ func (h *NotificationHandler) GetNotifications(c *gin.Context) {
 
 	var req service.GetNotificationsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -77,7 +79,7 @@ func (h *NotificationHandler) MarkAsRead(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, gin.H{"message": "Notification marked as read"})
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Notification marked as read"})
 }
 
 // MarkAllAsRead handles mark all notifications as read request
@@ -90,7 +92,7 @@ func (h *NotificationHandler) MarkAllAsRead(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, gin.H{"message": "All notifications marked as read"})
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "All notifications marked as read"})
 }
 
 // RegisterDeviceToken handles register device token request
@@ -99,7 +101,7 @@ func (h *NotificationHandler) RegisterDeviceToken(c *gin.Context) {
 
 	var req service.RegisterDeviceTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -109,7 +111,7 @@ func (h *NotificationHandler) RegisterDeviceToken(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // UnregisterDeviceToken handles unregister device token request
@@ -122,6 +124,6 @@ func (h *NotificationHandler) UnregisterDeviceToken(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, gin.H{"message": "Device token unregistered"})
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Device token unregistered"})
 }
 

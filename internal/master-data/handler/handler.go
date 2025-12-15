@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"unsri-backend/internal/master-data/service"
 	"unsri-backend/internal/shared/logger"
@@ -27,7 +29,7 @@ func NewMasterDataHandler(service *service.MasterDataService, logger logger.Logg
 func (h *MasterDataHandler) CreateStudyProgram(c *gin.Context) {
 	var req service.CreateStudyProgramRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -37,7 +39,7 @@ func (h *MasterDataHandler) CreateStudyProgram(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // GetStudyProgram handles get study program by ID request
@@ -50,14 +52,14 @@ func (h *MasterDataHandler) GetStudyProgram(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetStudyPrograms handles get study programs request
 func (h *MasterDataHandler) GetStudyPrograms(c *gin.Context) {
 	var req service.GetStudyProgramsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -85,7 +87,7 @@ func (h *MasterDataHandler) UpdateStudyProgram(c *gin.Context) {
 
 	var req service.UpdateStudyProgramRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -95,7 +97,7 @@ func (h *MasterDataHandler) UpdateStudyProgram(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // DeleteStudyProgram handles delete study program request
@@ -108,7 +110,7 @@ func (h *MasterDataHandler) DeleteStudyProgram(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, gin.H{"message": "Study program deleted successfully"})
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Study program deleted successfully"})
 }
 
 // ========== Academic Period Handlers ==========
@@ -117,7 +119,7 @@ func (h *MasterDataHandler) DeleteStudyProgram(c *gin.Context) {
 func (h *MasterDataHandler) CreateAcademicPeriod(c *gin.Context) {
 	var req service.CreateAcademicPeriodRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -127,7 +129,7 @@ func (h *MasterDataHandler) CreateAcademicPeriod(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // GetAcademicPeriod handles get academic period by ID request
@@ -140,7 +142,7 @@ func (h *MasterDataHandler) GetAcademicPeriod(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetActiveAcademicPeriod handles get active academic period request
@@ -151,14 +153,14 @@ func (h *MasterDataHandler) GetActiveAcademicPeriod(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetAcademicPeriods handles get academic periods request
 func (h *MasterDataHandler) GetAcademicPeriods(c *gin.Context) {
 	var req service.GetAcademicPeriodsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -186,7 +188,7 @@ func (h *MasterDataHandler) UpdateAcademicPeriod(c *gin.Context) {
 
 	var req service.UpdateAcademicPeriodRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -196,7 +198,7 @@ func (h *MasterDataHandler) UpdateAcademicPeriod(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // DeleteAcademicPeriod handles delete academic period request
@@ -218,7 +220,7 @@ func (h *MasterDataHandler) DeleteAcademicPeriod(c *gin.Context) {
 func (h *MasterDataHandler) CreateRoom(c *gin.Context) {
 	var req service.CreateRoomRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -228,7 +230,7 @@ func (h *MasterDataHandler) CreateRoom(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // GetRoom handles get room by ID request
@@ -241,14 +243,14 @@ func (h *MasterDataHandler) GetRoom(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetRooms handles get rooms request
 func (h *MasterDataHandler) GetRooms(c *gin.Context) {
 	var req service.GetRoomsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -276,7 +278,7 @@ func (h *MasterDataHandler) UpdateRoom(c *gin.Context) {
 
 	var req service.UpdateRoomRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -286,7 +288,7 @@ func (h *MasterDataHandler) UpdateRoom(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // DeleteRoom handles delete room request

@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"unsri-backend/internal/broadcast/service"
 	"unsri-backend/internal/shared/logger"
@@ -27,7 +29,7 @@ func (h *BroadcastHandler) CreateBroadcast(c *gin.Context) {
 
 	var req service.CreateBroadcastRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -37,7 +39,7 @@ func (h *BroadcastHandler) CreateBroadcast(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // GetBroadcast handles get broadcast by ID request
@@ -50,14 +52,14 @@ func (h *BroadcastHandler) GetBroadcast(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetBroadcasts handles get broadcasts request
 func (h *BroadcastHandler) GetBroadcasts(c *gin.Context) {
 	var req service.GetBroadcastsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -85,7 +87,7 @@ func (h *BroadcastHandler) UpdateBroadcast(c *gin.Context) {
 
 	var req service.UpdateBroadcastRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -95,7 +97,7 @@ func (h *BroadcastHandler) UpdateBroadcast(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // DeleteBroadcast handles delete broadcast request
@@ -108,7 +110,7 @@ func (h *BroadcastHandler) DeleteBroadcast(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, gin.H{"message": "Broadcast deleted successfully"})
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Broadcast deleted successfully"})
 }
 
 // SearchBroadcasts handles search broadcasts request
@@ -173,7 +175,7 @@ func (h *BroadcastHandler) ScheduleBroadcast(c *gin.Context) {
 
 	var req service.ScheduleBroadcastRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -183,6 +185,6 @@ func (h *BroadcastHandler) ScheduleBroadcast(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 

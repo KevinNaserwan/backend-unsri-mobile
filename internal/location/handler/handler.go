@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"unsri-backend/internal/location/service"
 	"unsri-backend/internal/shared/logger"
@@ -27,7 +29,7 @@ func (h *LocationHandler) TapIn(c *gin.Context) {
 
 	var req service.TapInRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -37,7 +39,7 @@ func (h *LocationHandler) TapIn(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // TapOut handles tap out request
@@ -46,7 +48,7 @@ func (h *LocationHandler) TapOut(c *gin.Context) {
 
 	var req service.TapOutRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -56,7 +58,7 @@ func (h *LocationHandler) TapOut(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetCheckInStatus handles get check-in status request
@@ -69,7 +71,7 @@ func (h *LocationHandler) GetCheckInStatus(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetLocationHistory handles get location history request
@@ -78,7 +80,7 @@ func (h *LocationHandler) GetLocationHistory(c *gin.Context) {
 
 	var req service.GetLocationHistoryRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -108,14 +110,14 @@ func (h *LocationHandler) GetGeofences(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // ValidateLocation handles validate location request
 func (h *LocationHandler) ValidateLocation(c *gin.Context) {
 	var req service.ValidateLocationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -125,14 +127,14 @@ func (h *LocationHandler) ValidateLocation(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // CreateGeofence handles create geofence request
 func (h *LocationHandler) CreateGeofence(c *gin.Context) {
 	var req service.CreateGeofenceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -142,6 +144,6 @@ func (h *LocationHandler) CreateGeofence(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 

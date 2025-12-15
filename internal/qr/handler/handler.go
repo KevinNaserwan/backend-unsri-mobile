@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"unsri-backend/internal/qr/service"
 	"unsri-backend/internal/shared/logger"
@@ -27,7 +29,7 @@ func (h *QRHandler) GenerateQR(c *gin.Context) {
 
 	var req service.GenerateQRRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -37,14 +39,14 @@ func (h *QRHandler) GenerateQR(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // ValidateQR handles validate QR request
 func (h *QRHandler) ValidateQR(c *gin.Context) {
 	var req service.ValidateQRRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -54,7 +56,7 @@ func (h *QRHandler) ValidateQR(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetQR handles get QR by ID request
@@ -67,7 +69,7 @@ func (h *QRHandler) GetQR(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GenerateClassQR handles generate class QR request
@@ -76,7 +78,7 @@ func (h *QRHandler) GenerateClassQR(c *gin.Context) {
 
 	var req service.GenerateClassQRRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -86,7 +88,7 @@ func (h *QRHandler) GenerateClassQR(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 201, result)
+	utils.SuccessResponse(c, http.StatusCreated, result)
 }
 
 // GenerateAccessQR handles generate access QR request (gate access - unique per user)
@@ -99,7 +101,7 @@ func (h *QRHandler) GenerateAccessQR(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // ValidateAccessQR handles validate access QR request (for gate)
@@ -112,7 +114,7 @@ func (h *QRHandler) ValidateAccessQR(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // RegenerateClassQR handles regenerate class QR request (after scan)
@@ -126,14 +128,14 @@ func (h *QRHandler) RegenerateClassQR(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // ValidateGateQR handles validate gate QR request (public endpoint for gate UNSRI)
 func (h *QRHandler) ValidateGateQR(c *gin.Context) {
 	var req service.ValidateGateQRRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -143,6 +145,6 @@ func (h *QRHandler) ValidateGateQR(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 

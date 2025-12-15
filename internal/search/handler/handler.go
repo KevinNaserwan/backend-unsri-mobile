@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -28,7 +29,7 @@ func NewSearchHandler(service *service.SearchService, logger logger.Logger) *Sea
 func (h *SearchHandler) Search(c *gin.Context) {
 	var req service.SearchRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -46,14 +47,14 @@ func (h *SearchHandler) Search(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GlobalSearch handles global search request
 func (h *SearchHandler) GlobalSearch(c *gin.Context) {
 	query := c.Query("q")
 	if query == "" {
-		c.JSON(400, gin.H{"error": "query parameter 'q' is required"})
+		utils.BadRequestResponse(c, "query parameter 'q' is required")
 		return
 	}
 
@@ -79,6 +80,6 @@ func (h *SearchHandler) GlobalSearch(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 

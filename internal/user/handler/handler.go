@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"unsri-backend/internal/shared/logger"
 	"unsri-backend/internal/shared/utils"
@@ -31,7 +33,7 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // UpdateProfile handles update user profile request
@@ -40,7 +42,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 
 	var req service.UpdateUserProfileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -50,7 +52,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetUserByID handles get user by ID request
@@ -63,14 +65,14 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // SearchUsers handles search users request
 func (h *UserHandler) SearchUsers(c *gin.Context) {
 	var req service.SearchUsersRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.ValidationErrorResponse(c, err)
 		return
 	}
 
@@ -102,7 +104,7 @@ func (h *UserHandler) GetMahasiswaByNIM(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetDosenByNIP handles get dosen by NIP request
@@ -115,7 +117,7 @@ func (h *UserHandler) GetDosenByNIP(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // GetStaffByNIP handles get staff by NIP request
@@ -128,7 +130,7 @@ func (h *UserHandler) GetStaffByNIP(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, result)
+	utils.SuccessResponse(c, http.StatusOK, result)
 }
 
 // UploadAvatar handles avatar upload request
@@ -137,21 +139,21 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 
 	file, err := c.FormFile("avatar")
 	if err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.BadRequestResponse(c, "Avatar file is required")
 		return
 	}
 
 	// Read file
 	src, err := file.Open()
 	if err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.BadRequestResponse(c, "Failed to open avatar file")
 		return
 	}
 	defer src.Close()
 
 	data := make([]byte, file.Size)
 	if _, err := src.Read(data); err != nil {
-		utils.ErrorResponse(c, 400, err)
+		utils.BadRequestResponse(c, "Failed to read avatar file")
 		return
 	}
 
@@ -167,6 +169,6 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, 200, gin.H{"avatar_url": avatarURL})
+	utils.SuccessResponse(c, http.StatusOK, gin.H{"avatar_url": avatarURL})
 }
 
