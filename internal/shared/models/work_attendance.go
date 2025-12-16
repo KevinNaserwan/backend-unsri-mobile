@@ -60,9 +60,9 @@ type UserShift struct {
 	UpdatedAt     time.Time  `json:"updated_at"`
 	DeletedAt     gorm.DeletedAt `gorm:"index" json:"-"`
 
-	// Relations
-	User  User         `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	Shift ShiftPattern `gorm:"foreignKey:ShiftID" json:"shift,omitempty"`
+	// Relations (excluded from JSON response)
+	User  User         `gorm:"foreignKey:UserID" json:"-"`
+	Shift ShiftPattern `gorm:"foreignKey:ShiftID" json:"-"`
 }
 
 // TableName specifies the table name
@@ -95,9 +95,9 @@ type WorkSchedule struct {
 	UpdatedAt   time.Time  `json:"updated_at"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 
-	// Relations
-	User  User          `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	Shift *ShiftPattern `gorm:"foreignKey:ShiftID" json:"shift,omitempty"`
+	// Relations (excluded from JSON response)
+	User  User          `gorm:"foreignKey:UserID" json:"-"`
+	Shift *ShiftPattern `gorm:"foreignKey:ShiftID" json:"-"`
 }
 
 // TableName specifies the table name
