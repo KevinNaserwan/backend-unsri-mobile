@@ -18,13 +18,13 @@ const (
 
 // User represents a user in the system
 type User struct {
-	ID           string    `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	Email        string    `gorm:"uniqueIndex;not null" json:"email"`
-	PasswordHash string    `gorm:"not null" json:"-"`
-	Role         UserRole  `gorm:"type:varchar(20);not null" json:"role"`
-	IsActive     bool      `gorm:"default:true" json:"is_active"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID           string         `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	Email        string         `gorm:"uniqueIndex;not null" json:"email"`
+	PasswordHash string         `gorm:"not null" json:"-"`
+	Role         UserRole       `gorm:"type:varchar(20);not null" json:"role"`
+	IsActive     bool           `gorm:"default:true" json:"is_active"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relations
@@ -48,14 +48,14 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 
 // Mahasiswa represents a student
 type Mahasiswa struct {
-	ID     string `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	UserID string `gorm:"type:uuid;uniqueIndex;not null" json:"user_id"`
-	NIM    string `gorm:"uniqueIndex;not null" json:"nim"`
-	Nama   string `gorm:"not null" json:"nama"`
-	Prodi  string `json:"prodi"` // Program Studi
-	Angkatan int  `json:"angkatan"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        string         `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	UserID    string         `gorm:"type:uuid;uniqueIndex;not null" json:"user_id"`
+	NIM       string         `gorm:"column:nim;uniqueIndex;not null" json:"nim"`
+	Nama      string         `gorm:"not null" json:"nama"`
+	Prodi     string         `json:"prodi"` // Program Studi
+	Angkatan  int            `json:"angkatan"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 
 	User User `gorm:"foreignKey:UserID" json:"-"`
@@ -76,13 +76,13 @@ func (m *Mahasiswa) BeforeCreate(tx *gorm.DB) error {
 
 // Dosen represents a lecturer
 type Dosen struct {
-	ID     string `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	UserID string `gorm:"type:uuid;uniqueIndex;not null" json:"user_id"`
-	NIP    string `gorm:"uniqueIndex;not null" json:"nip"`
-	Nama   string `gorm:"not null" json:"nama"`
-	Prodi  string `json:"prodi"` // Program Studi
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        string         `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	UserID    string         `gorm:"type:uuid;uniqueIndex;not null" json:"user_id"`
+	NIP       string         `gorm:"column:nip;uniqueIndex;not null" json:"nip"`
+	Nama      string         `gorm:"not null" json:"nama"`
+	Prodi     string         `json:"prodi"` // Program Studi
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 
 	User User `gorm:"foreignKey:UserID" json:"-"`
@@ -103,14 +103,14 @@ func (d *Dosen) BeforeCreate(tx *gorm.DB) error {
 
 // Staff represents a staff member
 type Staff struct {
-	ID     string `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	UserID string `gorm:"type:uuid;uniqueIndex;not null" json:"user_id"`
-	NIP    string `gorm:"uniqueIndex;not null" json:"nip"`
-	Nama   string `gorm:"not null" json:"nama"`
-	Jabatan string `json:"jabatan"`
-	Unit    string `json:"unit"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        string         `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	UserID    string         `gorm:"type:uuid;uniqueIndex;not null" json:"user_id"`
+	NIP       string         `gorm:"column:nip;uniqueIndex;not null" json:"nip"`
+	Nama      string         `gorm:"not null" json:"nama"`
+	Jabatan   string         `json:"jabatan"`
+	Unit      string         `json:"unit"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 
 	User User `gorm:"foreignKey:UserID" json:"-"`
@@ -128,4 +128,3 @@ func (s *Staff) BeforeCreate(tx *gorm.DB) error {
 	}
 	return nil
 }
-

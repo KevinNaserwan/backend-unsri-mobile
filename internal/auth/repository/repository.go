@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"gorm.io/gorm"
 	"unsri-backend/internal/shared/models"
+
+	"gorm.io/gorm"
 )
 
 // AuthRepository handles authentication data operations
@@ -103,3 +104,7 @@ func (r *AuthRepository) CreateStaff(ctx context.Context, staff *models.Staff) e
 	return r.db.WithContext(ctx).Create(staff).Error
 }
 
+// GetDB returns the underlying GORM DB instance for transaction support
+func (r *AuthRepository) GetDB() *gorm.DB {
+	return r.db
+}

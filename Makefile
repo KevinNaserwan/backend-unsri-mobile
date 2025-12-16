@@ -151,6 +151,45 @@ docker-down:
 docker-logs:
 	@docker-compose -f deployments/docker-compose/docker-compose.yml logs -f
 
+# Docker Compose Build Partial (Build specific services only)
+# Usage examples:
+#   make docker-build-partial SERVICE=auth-service
+#   make docker-build-partial SERVICE="auth-service user-service api-gateway"
+#   make docker-build-partial SERVICE=api-gateway --no-cache
+#
+# Available services:
+#   - Infrastructure: postgres, redis, rabbitmq
+#   - Core Services: auth-service, user-service, api-gateway
+#   - Academic Services: course-service, schedule-service, attendance-service, calendar-service
+#   - Communication: broadcast-service, notification-service
+#   - Location & Access: location-service, access-service, qr-service
+#   - Additional: quick-actions-service, file-storage-service, search-service, report-service, master-data-service, leave-service
+#
+# Examples:
+#   # Build only auth-service
+#   make docker-build-partial SERVICE=auth-service
+#
+#   # Build multiple services at once
+#   make docker-build-partial SERVICE="auth-service user-service api-gateway"
+#
+#   # Build with no cache (force rebuild)
+#   make docker-build-partial SERVICE=auth-service --no-cache
+#
+#   # Build only infrastructure services
+#   make docker-build-partial SERVICE="postgres redis rabbitmq"
+#
+#   # Build core services only
+#   make docker-build-partial SERVICE="auth-service user-service api-gateway"
+docker-build-partial:
+	@if [ -z "$(SERVICE)" ]; then \
+		echo "Error: SERVICE parameter is required"; \
+		echo "Usage: make docker-build-partial SERVICE=<service-name>"; \
+		echo "Example: make docker-build-partial SERVICE=auth-service"; \
+		exit 1; \
+	fi
+	@echo "Building services: $(SERVICE)"
+	@docker-compose -f deployments/docker-compose/docker-compose.yml build $(ARGS) $(SERVICE)
+
 # Kubernetes commands
 k8s-deploy:
 	@kubectl apply -f deployments/kubernetes/

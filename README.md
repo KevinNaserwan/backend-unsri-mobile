@@ -292,6 +292,26 @@ make migrate-down
 make migrate-version
 ```
 
+### Docker Build Partial
+
+Build hanya service tertentu untuk development cepat:
+
+```bash
+# Build single service
+make docker-build-partial SERVICE=auth-service
+
+# Build multiple services
+make docker-build-partial SERVICE="auth-service user-service api-gateway"
+
+# Build dengan no-cache
+make docker-build-partial SERVICE=auth-service ARGS="--no-cache"
+
+# Atau gunakan script
+./scripts/docker-build-partial.sh auth-service user-service
+```
+
+Lihat [Docker Build Partial Documentation](./docs/DOCKER_BUILD_PARTIAL.md) untuk detail lengkap.
+
 ### Code Generation
 
 ```bash

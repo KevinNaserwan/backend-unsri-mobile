@@ -3,10 +3,12 @@ package repository
 import (
 	"context"
 	"errors"
+	"math"
 	"time"
 
-	"gorm.io/gorm"
 	"unsri-backend/internal/shared/models"
+
+	"gorm.io/gorm"
 )
 
 // LocationRepository handles location data operations
@@ -87,7 +89,7 @@ func (r *LocationRepository) GetLocationHistory(ctx context.Context, userID stri
 func (r *LocationRepository) GetCurrentTapInStatus(ctx context.Context, userID string) (*models.LocationHistory, error) {
 	var history models.LocationHistory
 	today := time.Now().Format("2006-01-02")
-	
+
 	if err := r.db.WithContext(ctx).
 		Where("user_id = ? AND type = ? AND DATE(created_at) = ?", userID, "tap_in", today).
 		Order("created_at DESC").
@@ -100,28 +102,53 @@ func (r *LocationRepository) GetCurrentTapInStatus(ctx context.Context, userID s
 	return &history, nil
 }
 
-// CheckLocationInGeofence checks if location is within geofence
+// haversineDistance calculates the distance between two points using Haversine formula
+// Returns distance in meters
+func haversineDistance(lat1, lon1, lat2, lon2 float64) float64 {
+	const earthRadiusMeters = 6371000 // Earth radius in meters
+
+	// Convert latitude and longitude from degrees to radians
+	lat1Rad := lat1 * math.Pi / 180
+	lon1Rad := lon1 * math.Pi / 180
+	lat2Rad := lat2 * math.Pi / 180
+	lon2Rad := lon2 * math.Pi / 180
+
+	// Haversine formula
+	deltaLat := lat2Rad - lat1Rad
+	deltaLon := lon2Rad - lon1Rad
+
+	a := math.Sin(deltaLat/2)*math.Sin(deltaLat/2) +
+		math.Cos(lat1Rad)*math.Cos(lat2Rad)*
+			math.Sin(deltaLon/2)*math.Sin(deltaLon/2)
+
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+	distance := earthRadiusMeters * c
+
+	return distance
+}
+
+// CheckLocationInGeofence checks if location is within geofence using Haversine formula
 func (r *LocationRepository) CheckLocationInGeofence(ctx context.Context, latitude, longitude float64) (*models.Geofence, error) {
 	var geofences []models.Geofence
 	if err := r.db.WithContext(ctx).Where("is_active = ?", true).Find(&geofences).Error; err != nil {
 		return nil, err
 	}
 
-	// Simple distance calculation (Haversine formula would be better)
+	// Check if location is within any active geofence
 	for _, geofence := range geofences {
-		// Calculate distance (simplified)
-		latDiff := latitude - geofence.Latitude
-		lonDiff := longitude - geofence.Longitude
-		distance := latDiff*latDiff + lonDiff*lonDiff
-		
-		// Convert radius to degrees (approximate: 1 degree ≈ 111km)
-		radiusInDegrees := geofence.Radius / 111000.0
-		
-		if distance <= radiusInDegrees*radiusInDegrees {
+		// Calculate distance using Haversine formula (in meters)
+		distance := haversineDistance(
+			geofence.Latitude,
+			geofence.Longitude,
+			latitude,
+			longitude,
+		)
+
+		// Check if distance is within radius (radius is in meters)
+		if distance <= geofence.Radius {
 			return &geofence, nil
 		}
 	}
 
 	return nil, errors.New("location not in any geofence")
 }
-
