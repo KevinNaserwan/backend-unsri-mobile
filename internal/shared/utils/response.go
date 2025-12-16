@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"strings"
 
+	"unsri-backend/internal/shared/errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"unsri-backend/internal/shared/errors"
 )
 
 // Response represents a standard API response
@@ -54,7 +55,7 @@ func ErrorResponse(c *gin.Context, statusCode int, err error) {
 		for _, fieldErr := range validationErr {
 			field := strings.ToLower(fieldErr.Field())
 			tag := fieldErr.Tag()
-			
+
 			var message string
 			switch tag {
 			case "required":
@@ -70,7 +71,7 @@ func ErrorResponse(c *gin.Context, statusCode int, err error) {
 			default:
 				message = fmt.Sprintf("%s is invalid", field)
 			}
-			
+
 			details[field] = message
 			messages = append(messages, message)
 		}
@@ -107,16 +108,39 @@ func ErrorResponse(c *gin.Context, statusCode int, err error) {
 	}
 
 	// Map error codes to HTTP status codes
-	if appErr.Code == errors.ErrCodeNotFound {
-		statusCode = http.StatusNotFound
-	} else if appErr.Code == errors.ErrCodeUnauthorized {
-		statusCode = http.StatusUnauthorized
-	} else if appErr.Code == errors.ErrCodeForbidden {
-		statusCode = http.StatusForbidden
-	} else if appErr.Code == errors.ErrCodeBadRequest || appErr.Code == errors.ErrCodeValidationFailed {
-		statusCode = http.StatusBadRequest
-	} else if appErr.Code == errors.ErrCodeConflict {
-		statusCode = http.StatusConflict
+	// If statusCode is 0, determine it from error code
+	if statusCode == 0 {
+		switch appErr.Code {
+		case errors.ErrCodeNotFound:
+			statusCode = http.StatusNotFound
+		case errors.ErrCodeUnauthorized:
+			statusCode = http.StatusUnauthorized
+		case errors.ErrCodeForbidden:
+			statusCode = http.StatusForbidden
+		case errors.ErrCodeBadRequest, errors.ErrCodeValidationFailed:
+			statusCode = http.StatusBadRequest
+		case errors.ErrCodeConflict:
+			statusCode = http.StatusConflict
+		case errors.ErrCodeInternalError:
+			statusCode = http.StatusInternalServerError
+		default:
+			statusCode = http.StatusInternalServerError
+		}
+	} else {
+		// If statusCode is provided, still map error codes to ensure consistency
+		if appErr.Code == errors.ErrCodeNotFound {
+			statusCode = http.StatusNotFound
+		} else if appErr.Code == errors.ErrCodeUnauthorized {
+			statusCode = http.StatusUnauthorized
+		} else if appErr.Code == errors.ErrCodeForbidden {
+			statusCode = http.StatusForbidden
+		} else if appErr.Code == errors.ErrCodeBadRequest || appErr.Code == errors.ErrCodeValidationFailed {
+			statusCode = http.StatusBadRequest
+		} else if appErr.Code == errors.ErrCodeConflict {
+			statusCode = http.StatusConflict
+		} else if appErr.Code == errors.ErrCodeInternalError {
+			statusCode = http.StatusInternalServerError
+		}
 	}
 
 	c.JSON(statusCode, Response{
@@ -178,4 +202,3 @@ func PaginatedResponse(c *gin.Context, data interface{}, page, perPage int, tota
 		},
 	})
 }
-

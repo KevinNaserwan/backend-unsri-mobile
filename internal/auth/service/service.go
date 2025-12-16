@@ -2,18 +2,22 @@ package service
 
 import (
 	"context"
+	"errors"
+	"strings"
 
-	"golang.org/x/crypto/bcrypt"
 	"unsri-backend/internal/auth/repository"
 	apperrors "unsri-backend/internal/shared/errors"
 	"unsri-backend/internal/shared/models"
 	"unsri-backend/pkg/jwt"
+
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // AuthService handles authentication business logic
 type AuthService struct {
-	repo   *repository.AuthRepository
-	jwt    *jwt.JWT
+	repo *repository.AuthRepository
+	jwt  *jwt.JWT
 }
 
 // NewAuthService creates a new auth service
@@ -32,20 +36,20 @@ type LoginRequest struct {
 
 // LoginResponse represents login response
 type LoginResponse struct {
-	AccessToken  string      `json:"access_token"`
-	RefreshToken string      `json:"refresh_token"`
-	User         *UserInfo   `json:"user"`
+	AccessToken  string    `json:"access_token"`
+	RefreshToken string    `json:"refresh_token"`
+	User         *UserInfo `json:"user"`
 }
 
 // UserInfo represents user information in response
 type UserInfo struct {
-	ID        string                `json:"id"`
-	Email     string                `json:"email"`
-	Role      models.UserRole       `json:"role"`
-	IsActive  bool                  `json:"is_active"`
-	Mahasiswa *models.Mahasiswa     `json:"mahasiswa,omitempty"`
-	Dosen     *models.Dosen         `json:"dosen,omitempty"`
-	Staff     *models.Staff         `json:"staff,omitempty"`
+	ID        string            `json:"id"`
+	Email     string            `json:"email"`
+	Role      models.UserRole   `json:"role"`
+	IsActive  bool              `json:"is_active"`
+	Mahasiswa *models.Mahasiswa `json:"mahasiswa,omitempty"`
+	Dosen     *models.Dosen     `json:"dosen,omitempty"`
+	Staff     *models.Staff     `json:"staff,omitempty"`
 }
 
 // Login authenticates a user
@@ -110,6 +114,29 @@ type RegisterRequest struct {
 	Unit     string          `json:"unit,omitempty"`     // For staff
 }
 
+// isConstraintViolation checks if error is a database constraint violation
+func isConstraintViolation(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// Check for GORM duplicate entry error
+	if errors.Is(err, gorm.ErrDuplicatedKey) {
+		return true
+	}
+
+	// Check for PostgreSQL unique constraint violation in error message
+	errStr := strings.ToLower(err.Error())
+	if strings.Contains(errStr, "unique constraint") ||
+		strings.Contains(errStr, "duplicate key") ||
+		strings.Contains(errStr, "violates unique constraint") ||
+		strings.Contains(errStr, "23505") { // PostgreSQL unique violation error code
+		return true
+	}
+
+	return false
+}
+
 // Register registers a new user
 func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*UserInfo, error) {
 	// Check if email already exists
@@ -124,63 +151,120 @@ func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*UserI
 		return nil, apperrors.NewInternalError("failed to hash password", err)
 	}
 
-	// Create user
-	user := &models.User{
-		Email:        req.Email,
-		PasswordHash: string(hashedPassword),
-		Role:         req.Role,
-		IsActive:     true,
+	// Use transaction to ensure atomicity - if any step fails, all changes are rolled back
+	db := s.repo.GetDB()
+	var createdUserID string
+
+	err = db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Create user within transaction
+		user := &models.User{
+			Email:        req.Email,
+			PasswordHash: string(hashedPassword),
+			Role:         req.Role,
+			IsActive:     true,
+		}
+
+		if err := tx.Create(user).Error; err != nil {
+			if isConstraintViolation(err) {
+				return apperrors.NewConflictError("email already registered")
+			}
+			return apperrors.NewInternalError("failed to create user", err)
+		}
+
+		// Store user ID for later use
+		createdUserID = user.ID
+
+		// Create role-specific record within transaction
+		if req.Role == models.RoleMahasiswa {
+			if req.NIM == "" {
+				return apperrors.NewValidationError("NIM is required for mahasiswa")
+			}
+			// Check if NIM already exists
+			var existingMahasiswa models.Mahasiswa
+			if err := tx.Where("nim = ?", req.NIM).First(&existingMahasiswa).Error; err == nil {
+				return apperrors.NewConflictError("NIM already registered")
+			} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+			mahasiswa := &models.Mahasiswa{
+				UserID:   user.ID,
+				NIM:      req.NIM,
+				Nama:     req.Nama,
+				Prodi:    req.Prodi,
+				Angkatan: req.Angkatan,
+			}
+			if err := tx.Create(mahasiswa).Error; err != nil {
+				if isConstraintViolation(err) {
+					return apperrors.NewConflictError("NIM already registered")
+				}
+				return apperrors.NewInternalError("failed to create mahasiswa", err)
+			}
+		} else if req.Role == models.RoleDosen {
+			if req.NIP == "" {
+				return apperrors.NewValidationError("NIP is required for dosen")
+			}
+			// Check if NIP already exists
+			var existingDosen models.Dosen
+			if err := tx.Where("nip = ?", req.NIP).First(&existingDosen).Error; err == nil {
+				return apperrors.NewConflictError("NIP already registered")
+			} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+			dosen := &models.Dosen{
+				UserID: user.ID,
+				NIP:    req.NIP,
+				Nama:   req.Nama,
+				Prodi:  req.Prodi,
+			}
+			if err := tx.Create(dosen).Error; err != nil {
+				if isConstraintViolation(err) {
+					return apperrors.NewConflictError("NIP already registered")
+				}
+				return apperrors.NewInternalError("failed to create dosen", err)
+			}
+		} else if req.Role == models.RoleStaff {
+			if req.NIP == "" {
+				return apperrors.NewValidationError("NIP is required for staff")
+			}
+			// Check if NIP already exists
+			var existingStaff models.Staff
+			if err := tx.Where("nip = ?", req.NIP).First(&existingStaff).Error; err == nil {
+				return apperrors.NewConflictError("NIP already registered")
+			} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+			staff := &models.Staff{
+				UserID:  user.ID,
+				NIP:     req.NIP,
+				Nama:    req.Nama,
+				Jabatan: req.Jabatan,
+				Unit:    req.Unit,
+			}
+			if err := tx.Create(staff).Error; err != nil {
+				if isConstraintViolation(err) {
+					return apperrors.NewConflictError("NIP already registered")
+				}
+				return apperrors.NewInternalError("failed to create staff", err)
+			}
+		}
+
+		// Transaction will commit automatically if no error is returned
+		return nil
+	})
+
+	if err != nil {
+		// Transaction was rolled back automatically on error
+		// Check if it's already an AppError
+		if appErr, ok := err.(*apperrors.AppError); ok {
+			return nil, appErr
+		}
+		return nil, err
 	}
 
-	if err := s.repo.Create(ctx, user); err != nil {
-		return nil, apperrors.NewInternalError("failed to create user", err)
-	}
-
-	// Create role-specific record
-	if req.Role == models.RoleMahasiswa {
-		if req.NIM == "" {
-			return nil, apperrors.NewValidationError("NIM is required for mahasiswa")
-		}
-		mahasiswa := &models.Mahasiswa{
-			UserID:   user.ID,
-			NIM:      req.NIM,
-			Nama:     req.Nama,
-			Prodi:    req.Prodi,
-			Angkatan: req.Angkatan,
-		}
-		if err := s.repo.CreateMahasiswa(ctx, mahasiswa); err != nil {
-			return nil, apperrors.NewInternalError("failed to create mahasiswa", err)
-		}
-		user.Mahasiswa = mahasiswa
-	} else if req.Role == models.RoleDosen {
-		if req.NIP == "" {
-			return nil, apperrors.NewValidationError("NIP is required for dosen")
-		}
-		dosen := &models.Dosen{
-			UserID: user.ID,
-			NIP:    req.NIP,
-			Nama:   req.Nama,
-			Prodi:  req.Prodi,
-		}
-		if err := s.repo.CreateDosen(ctx, dosen); err != nil {
-			return nil, apperrors.NewInternalError("failed to create dosen", err)
-		}
-		user.Dosen = dosen
-	} else if req.Role == models.RoleStaff {
-		if req.NIP == "" {
-			return nil, apperrors.NewValidationError("NIP is required for staff")
-		}
-		staff := &models.Staff{
-			UserID: user.ID,
-			NIP:    req.NIP,
-			Nama:   req.Nama,
-			Jabatan: req.Jabatan,
-			Unit:    req.Unit,
-		}
-		if err := s.repo.CreateStaff(ctx, staff); err != nil {
-			return nil, apperrors.NewInternalError("failed to create staff", err)
-		}
-		user.Staff = staff
+	// Query user again after transaction commits to get the full data with relations
+	user, err := s.repo.FindByID(ctx, createdUserID)
+	if err != nil {
+		return nil, apperrors.NewInternalError("failed to retrieve created user", err)
 	}
 
 	userInfo := &UserInfo{
@@ -277,4 +361,3 @@ func (s *AuthService) VerifyToken(ctx context.Context, tokenString string) (*Use
 
 	return userInfo, nil
 }
-

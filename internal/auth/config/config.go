@@ -8,11 +8,11 @@ import (
 
 // Config holds the configuration for auth service
 type Config struct {
-	Port            string
-	Database        DatabaseConfig
-	Redis           RedisConfig
-	JWT             JWTConfig
-	LogLevel        string
+	Port     string
+	Database DatabaseConfig
+	Redis    RedisConfig
+	JWT      JWTConfig
+	LogLevel string
 }
 
 // DatabaseConfig holds database configuration
@@ -38,7 +38,7 @@ type RedisConfig struct {
 
 // JWTConfig holds JWT configuration
 type JWTConfig struct {
-	SecretKey        string
+	SecretKey       string
 	AccessTokenTTL  time.Duration
 	RefreshTokenTTL time.Duration
 }
@@ -56,7 +56,7 @@ func Load() *Config {
 	viper.SetDefault("REDIS_HOST", "localhost")
 	viper.SetDefault("REDIS_PORT", "6379")
 	viper.SetDefault("JWT_SECRET", "your-secret-key-change-in-production")
-	viper.SetDefault("JWT_ACCESS_TTL", "15m")
+	viper.SetDefault("JWT_ACCESS_TTL", "12h")
 	viper.SetDefault("JWT_REFRESH_TTL", "7d")
 
 	viper.AutomaticEnv()
@@ -85,10 +85,9 @@ func Load() *Config {
 			DB:       0,
 		},
 		JWT: JWTConfig{
-			SecretKey:        viper.GetString("JWT_SECRET"),
+			SecretKey:       viper.GetString("JWT_SECRET"),
 			AccessTokenTTL:  accessTTL,
 			RefreshTokenTTL: refreshTTL,
 		},
 	}
 }
-
