@@ -1,12 +1,74 @@
 {
   "info": {
-    "_postman_id": "unsri-backend-dosen-testing",
+    "_postman_id": "a2031fc2-2845-41c2-9139-ec44a9f5f7e4",
     "name": "UNSRI Backend - Dosen Testing",
     "description": "Testing collection untuk role Dosen dengan test scripts dan assertions lengkap",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "unsri-backend"
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
+    {
+      "name": "0. Gate Access",
+      "item": [
+        {
+          "name": "GET QR Code Access Gate",
+          "id": "992d2c4b-86a8-4492-8b26-dfa40e14e4f2",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/qr/access/generate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "qr",
+                "access",
+                "generate"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Access Gate",
+          "id": "57a46740-c52b-4d3a-8c2d-e2367fd82ffd",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/qr/access/validate/:session_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "qr",
+                "access",
+                "validate",
+                ":session_id"
+              ],
+              "variable": [
+                {
+                  "key": "session_id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "89b0a6aa-2d0f-4ec6-9c5e-cf4c6d6dd94d"
+    },
     {
       "name": "1. Authentication",
       "item": [
@@ -43,10 +105,12 @@
                   "    pm.collectionVariables.set(\"test_dosen_email\", jsonData.data.email);",
                   "}"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "6af32667-1544-42cb-b892-36fdc932bae1"
               }
             }
           ],
+          "id": "03320602-44c9-4104-8ac4-130e3314b28b",
           "request": {
             "method": "POST",
             "header": [
@@ -61,11 +125,19 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/auth/register",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "register"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
             },
             "description": "Register new lecturer account"
-          }
+          },
+          "response": []
         },
         {
           "name": "Login",
@@ -112,10 +184,12 @@
                   "    pm.collectionVariables.set(\"user_id\", jsonData.data.user.id);",
                   "}"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "275884c6-3c8c-4925-a030-50ad48a23e7b"
               }
             }
           ],
+          "id": "dcb9d756-0c95-4ac0-8d93-0cdb91c7773d",
           "request": {
             "method": "POST",
             "header": [
@@ -130,11 +204,19 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
             },
             "description": "Login and get access token"
-          }
+          },
+          "response": []
         },
         {
           "name": "Verify Token",
@@ -161,10 +243,12 @@
                   "    pm.expect(jsonData.data.role).to.eql('dosen');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "978ed91b-8c88-4529-83fe-35e13d134a0f"
               }
             }
           ],
+          "id": "09ced9f5-0f74-4773-a9f6-8d225b8428ef",
           "request": {
             "method": "GET",
             "header": [
@@ -175,13 +259,80 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/auth/verify",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "verify"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "verify"
+              ]
             },
             "description": "Verify access token validity"
-          }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "a3679583-6c70-47d0-afbf-3ff166db4521",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has new access_token\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('access_token');",
+                  "});",
+                  "",
+                  "// Update access token",
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"access_token\", jsonData.data.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "104700eb-55cc-4177-a820-cd4c794d2a38",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Refresh access token using refresh token"
+          },
+          "response": []
         }
-      ]
+      ],
+      "id": "fb6dc8ad-8799-4313-9464-3a20d23eed61"
     },
     {
       "name": "2. Profile Management",
@@ -213,10 +364,12 @@
                   "    pm.expect(jsonData.data.dosen).to.have.property('nama');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "0a4bcf6d-451d-4e99-8e63-57522d010fd9"
               }
             }
           ],
+          "id": "ab3ac8c9-9020-49b3-8c88-61a71f64984f",
           "request": {
             "method": "GET",
             "header": [
@@ -227,10 +380,18 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/users/profile",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "users", "profile"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "profile"
+              ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Update Profile",
@@ -254,10 +415,12 @@
                   "    pm.expect(jsonData.data.dosen.nama).to.include('Updated');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "4424d8a8-b818-4665-bef1-400dbb55eca5"
               }
             }
           ],
+          "id": "b6fd77db-21f4-42f5-a30a-6c0d904b8041",
           "request": {
             "method": "PUT",
             "header": [
@@ -276,12 +439,21 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/users/profile",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "users", "profile"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "profile"
+              ]
             }
-          }
+          },
+          "response": []
         }
-      ]
+      ],
+      "id": "328ba9cf-8b27-4d9d-8378-651cb8e871f8"
     },
     {
       "name": "3. Course Management",
@@ -302,10 +474,12 @@
                   "    pm.expect(jsonData.data).to.be.an('array');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "c6a241b7-0690-4e54-8359-01c612c1d401"
               }
             }
           ],
+          "id": "f729c2cd-b0bf-4757-9e4c-3815b73d8cf9",
           "request": {
             "method": "GET",
             "header": [
@@ -316,8 +490,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/courses?page=1&per_page=20",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "courses"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -329,7 +509,8 @@
                 }
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Create Course",
@@ -356,10 +537,12 @@
                   "    pm.collectionVariables.set(\"test_course_id\", jsonData.data.id);",
                   "}"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "c3cc4b49-bccd-4adf-ad65-31dee18b9c0f"
               }
             }
           ],
+          "id": "8e6eaa87-54b7-4956-a9e1-e0c3000932d6",
           "request": {
             "method": "POST",
             "header": [
@@ -378,11 +561,18 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/courses",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "courses"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses"
+              ]
             },
             "description": "Create new course (Dosen/Staff only)"
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Course by ID",
@@ -402,10 +592,12 @@
                   "    pm.expect(jsonData.data).to.have.property('name');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "3b3652c8-92f7-4b0b-bead-b3ef9dc6753f"
               }
             }
           ],
+          "id": "c8ca318b-38c6-4e3e-af8d-431bc294a80d",
           "request": {
             "method": "GET",
             "header": [
@@ -416,10 +608,18 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/courses/{{test_course_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "courses", "{{test_course_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                "{{test_course_id}}"
+              ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Update Course",
@@ -437,10 +637,12 @@
                   "    pm.expect(jsonData.data.name).to.include('Updated');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "7c31020d-88eb-4420-b4f1-14336a2b6b05"
               }
             }
           ],
+          "id": "132917dd-9973-4e16-b4b0-52ef4659ae94",
           "request": {
             "method": "PUT",
             "header": [
@@ -459,10 +661,18 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/courses/{{test_course_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "courses", "{{test_course_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                "{{test_course_id}}"
+              ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Courses by Lecturer",
@@ -480,10 +690,12 @@
                   "    pm.expect(jsonData.data).to.be.an('array');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "5fc94b92-489d-47ab-b5fe-00ea01e8676b"
               }
             }
           ],
+          "id": "bf2ca57c-13e8-4208-898f-0dc996d646c3",
           "request": {
             "method": "GET",
             "header": [
@@ -494,12 +706,22 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/courses/by-lecturer/{{user_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "courses", "by-lecturer", "{{user_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses",
+                "by-lecturer",
+                "{{user_id}}"
+              ]
             }
-          }
+          },
+          "response": []
         }
-      ]
+      ],
+      "id": "5dc81da1-20a0-4f53-b9e1-e1c839f85f6a"
     },
     {
       "name": "4. Class Management",
@@ -528,10 +750,12 @@
                   "    }",
                   "}"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "4abb1fd9-68f9-490e-846d-59d20ded45af"
               }
             }
           ],
+          "id": "1238ee93-3031-49fc-998d-73f5f3dcdc58",
           "request": {
             "method": "GET",
             "header": [
@@ -542,8 +766,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/classes?page=1&per_page=20",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "classes"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "classes"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -555,7 +785,8 @@
                 }
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Create Class",
@@ -582,10 +813,12 @@
                   "    pm.collectionVariables.set(\"test_class_id\", jsonData.data.id);",
                   "}"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "e3963288-f669-429a-a182-9efb073205ca"
               }
             }
           ],
+          "id": "ae2e4aad-59b4-4c72-bcc4-0ae297d00aa9",
           "request": {
             "method": "POST",
             "header": [
@@ -604,11 +837,18 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/classes",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "classes"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "classes"
+              ]
             },
             "description": "Create new class (Dosen/Staff only). Day of week: 0=Sunday, 1=Monday, ..., 6=Saturday"
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Enrollments by Class",
@@ -634,10 +874,12 @@
                   "    }",
                   "}"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "d9cabacb-8339-4bd6-aca0-cb8deec3345c"
               }
             }
           ],
+          "id": "2eb49c41-ead1-4241-b31b-16ce3c74ec46",
           "request": {
             "method": "GET",
             "header": [
@@ -648,7 +890,9 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/classes/{{test_class_id}}/enrollments",
-              "host": ["{{base_url}}"],
+              "host": [
+                "{{base_url}}"
+              ],
               "path": [
                 "api",
                 "v1",
@@ -657,9 +901,11 @@
                 "enrollments"
               ]
             }
-          }
+          },
+          "response": []
         }
-      ]
+      ],
+      "id": "a3bbe90f-b31a-4a63-a277-ccdc91544ee7"
     },
     {
       "name": "5. Enrollment Management",
@@ -680,10 +926,12 @@
                   "    pm.expect(jsonData.data.status).to.eql('approved');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "408f141a-83da-4fe7-af44-cda00559f50e"
               }
             }
           ],
+          "id": "0255f65b-226d-4cc1-9d1a-e333a4440462",
           "request": {
             "method": "PUT",
             "header": [
@@ -702,7 +950,9 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/enrollments/{{test_enrollment_id}}/status",
-              "host": ["{{base_url}}"],
+              "host": [
+                "{{base_url}}"
+              ],
               "path": [
                 "api",
                 "v1",
@@ -712,7 +962,8 @@
               ]
             },
             "description": "Approve enrollment (Dosen/Staff only)"
-          }
+          },
+          "response": []
         },
         {
           "name": "Update Enrollment Grade",
@@ -731,10 +982,12 @@
                   "    pm.expect(jsonData.data.grade).to.eql('A');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "7290eec3-e756-4c42-92ab-29713e5d3471"
               }
             }
           ],
+          "id": "e40f0a6f-cf2a-4014-ade3-bc82d0c220f1",
           "request": {
             "method": "PUT",
             "header": [
@@ -753,7 +1006,9 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/enrollments/{{test_enrollment_id}}/grade",
-              "host": ["{{base_url}}"],
+              "host": [
+                "{{base_url}}"
+              ],
               "path": [
                 "api",
                 "v1",
@@ -763,9 +1018,11 @@
               ]
             },
             "description": "Update student grade (Dosen/Staff only)"
-          }
+          },
+          "response": []
         }
-      ]
+      ],
+      "id": "2e2940c8-5e1b-4747-ab28-1cd52c370601"
     },
     {
       "name": "6. Schedule Management",
@@ -786,10 +1043,12 @@
                   "    pm.expect(jsonData.data).to.be.an('array');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "3057690a-abdd-4dba-8a31-166a4be2438d"
               }
             }
           ],
+          "id": "2dac4ca8-a137-4c8f-88a2-d32b2c3ba083",
           "request": {
             "method": "GET",
             "header": [
@@ -800,8 +1059,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/schedules?page=1&per_page=20&dosen_id={{user_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "schedules"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "schedules"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -817,7 +1082,8 @@
                 }
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Create Schedule",
@@ -843,10 +1109,12 @@
                   "    pm.collectionVariables.set(\"test_schedule_id\", jsonData.data.id);",
                   "}"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "e90ff667-5a5e-4421-ac76-4e739843bad2"
               }
             }
           ],
+          "id": "d2046b90-e2e3-437a-91b7-d605d36a605f",
           "request": {
             "method": "POST",
             "header": [
@@ -865,11 +1133,18 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/schedules",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "schedules"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "schedules"
+              ]
             },
             "description": "Create schedule (Dosen/Staff only)"
-          }
+          },
+          "response": []
         },
         {
           "name": "Update Schedule",
@@ -887,10 +1162,12 @@
                   "    pm.expect(jsonData.data).to.have.property('room');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "d799796b-986d-43ae-bf5b-d114eabb0c2e"
               }
             }
           ],
+          "id": "1f1efbc5-5ea2-4724-9d08-fd3881cd6932",
           "request": {
             "method": "PUT",
             "header": [
@@ -909,10 +1186,18 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/schedules/{{test_schedule_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "schedules", "{{test_schedule_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "schedules",
+                "{{test_schedule_id}}"
+              ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Today's Schedules",
@@ -930,10 +1215,12 @@
                   "    pm.expect(jsonData.data).to.be.an('array');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "fdc02943-47c6-4499-b0a9-3a9cbccdf201"
               }
             }
           ],
+          "id": "eda3fc86-7793-41e2-8f63-3ab8bd324550",
           "request": {
             "method": "GET",
             "header": [
@@ -944,12 +1231,21 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/schedules/today",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "schedules", "today"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "schedules",
+                "today"
+              ]
             }
-          }
+          },
+          "response": []
         }
-      ]
+      ],
+      "id": "07b7a04a-4517-449f-9705-00bcd204f494"
     },
     {
       "name": "7. Attendance Management",
@@ -977,10 +1273,12 @@
                   "    pm.collectionVariables.set(\"test_qr_code\", jsonData.data.qr_code);",
                   "}"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "3230e6e4-e373-4e36-b837-04fea91a1eaa"
               }
             }
           ],
+          "id": "40d4bb19-94cd-4a05-b312-284492bc32aa",
           "request": {
             "method": "POST",
             "header": [
@@ -999,11 +1297,20 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/attendance/qr/generate",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "attendance", "qr", "generate"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "attendance",
+                "qr",
+                "generate"
+              ]
             },
             "description": "Generate QR code for attendance (Dosen/Staff only)"
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Attendance Statistics",
@@ -1021,10 +1328,12 @@
                   "    pm.expect(jsonData.data).to.be.an('object');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "258690d2-0bba-4f6a-a4ca-0ef2cc98cd69"
               }
             }
           ],
+          "id": "7db0c392-d06a-4f63-a0c5-464b3ef0ab61",
           "request": {
             "method": "GET",
             "header": [
@@ -1035,8 +1344,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/attendance/statistics?start_date=2024-01-01&end_date=2024-12-31",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "attendance", "statistics"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "attendance",
+                "statistics"
+              ],
               "query": [
                 {
                   "key": "start_date",
@@ -1048,7 +1364,8 @@
                 }
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Attendances by Course",
@@ -1066,10 +1383,12 @@
                   "    pm.expect(jsonData.data).to.be.an('array');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "57e55cee-c25a-46ab-9ddc-c9b5c1513ab2"
               }
             }
           ],
+          "id": "055fe7e7-54d2-4a20-b793-d9e97a9e1d01",
           "request": {
             "method": "GET",
             "header": [
@@ -1080,7 +1399,9 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/attendance/by-course/{{test_course_id}}?start_date=2024-01-01&end_date=2024-12-31",
-              "host": ["{{base_url}}"],
+              "host": [
+                "{{base_url}}"
+              ],
               "path": [
                 "api",
                 "v1",
@@ -1099,7 +1420,8 @@
                 }
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Create Manual Attendance",
@@ -1118,10 +1440,12 @@
                   "    pm.expect(jsonData.data).to.have.property('status');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "d405a89a-ffee-443d-ba50-d031d66287df"
               }
             }
           ],
+          "id": "c6c8028c-4632-43f9-8101-75f9e57884a8",
           "request": {
             "method": "POST",
             "header": [
@@ -1140,13 +1464,22 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/attendance/manual",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "attendance", "manual"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "attendance",
+                "manual"
+              ]
             },
             "description": "Create manual attendance entry (Dosen/Staff only)"
-          }
+          },
+          "response": []
         }
-      ]
+      ],
+      "id": "54b5ac3c-6807-4317-942f-394f1802dbb1"
     },
     {
       "name": "8. Broadcast Management",
@@ -1167,10 +1500,12 @@
                   "    pm.expect(jsonData.data).to.be.an('array');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "2bd80492-8d81-44cb-ac46-7be7e0f2bfa1"
               }
             }
           ],
+          "id": "479c0667-fe27-4563-a2e7-ace081baaac2",
           "request": {
             "method": "GET",
             "header": [
@@ -1181,8 +1516,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/broadcasts?page=1&per_page=20",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "broadcasts"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "broadcasts"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -1194,7 +1535,8 @@
                 }
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Create Broadcast",
@@ -1221,10 +1563,12 @@
                   "    pm.collectionVariables.set(\"test_broadcast_id\", jsonData.data.id);",
                   "}"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "06bc022d-1ba7-4142-950c-592fd8bdd97c"
               }
             }
           ],
+          "id": "bd164d7e-8039-4beb-90d5-0fcb976188d1",
           "request": {
             "method": "POST",
             "header": [
@@ -1243,11 +1587,18 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/broadcasts",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "broadcasts"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "broadcasts"
+              ]
             },
             "description": "Create broadcast (Dosen/Staff only)"
-          }
+          },
+          "response": []
         },
         {
           "name": "Update Broadcast",
@@ -1265,10 +1616,12 @@
                   "    pm.expect(jsonData.data.title).to.include('Updated');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "7e326d8c-131c-4c6c-8b2d-887bdb5ebea5"
               }
             }
           ],
+          "id": "af02ad57-013d-4daa-aa0a-e0739b10c938",
           "request": {
             "method": "PUT",
             "header": [
@@ -1287,10 +1640,18 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/broadcasts/{{test_broadcast_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "broadcasts", "{{test_broadcast_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "broadcasts",
+                "{{test_broadcast_id}}"
+              ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Broadcast by ID",
@@ -1309,10 +1670,12 @@
                   "    pm.expect(jsonData.data).to.have.property('title');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "cb2df793-2fde-4b12-8a91-7d49f4e8ce61"
               }
             }
           ],
+          "id": "d1fdb1d6-f922-48b6-86b5-070fdd45d871",
           "request": {
             "method": "GET",
             "header": [
@@ -1323,12 +1686,21 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/broadcasts/{{test_broadcast_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "broadcasts", "{{test_broadcast_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "broadcasts",
+                "{{test_broadcast_id}}"
+              ]
             }
-          }
+          },
+          "response": []
         }
-      ]
+      ],
+      "id": "0a604001-eba8-4cd8-b7ae-f63b03b7ca34"
     },
     {
       "name": "9. Notification Management",
@@ -1351,10 +1723,12 @@
                   "    pm.expect(jsonData.data).to.have.property('message');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "7cb33e99-fb74-4fdc-a0a6-c6ba9f2e2de6"
               }
             }
           ],
+          "id": "1481800f-8e57-4736-8ae0-c46cbdfd063f",
           "request": {
             "method": "POST",
             "header": [
@@ -1373,11 +1747,19 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/notifications/send",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "notifications", "send"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "send"
+              ]
             },
             "description": "Send notification (Dosen/Staff only)"
-          }
+          },
+          "response": []
         },
         {
           "name": "Get All Notifications",
@@ -1395,10 +1777,12 @@
                   "    pm.expect(jsonData.data).to.be.an('array');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "b5417672-4d17-4515-9ec7-fc88107b23f7"
               }
             }
           ],
+          "id": "505e20b4-3bd4-47b6-87db-ade39f4d690b",
           "request": {
             "method": "GET",
             "header": [
@@ -1409,8 +1793,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/notifications?page=1&per_page=20",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "notifications"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -1422,9 +1812,11 @@
                 }
               ]
             }
-          }
+          },
+          "response": []
         }
-      ]
+      ],
+      "id": "cd0d56a1-59a1-4a18-8b31-72ff0d2244ca"
     },
     {
       "name": "10. Leave Management",
@@ -1452,10 +1844,12 @@
                   "    pm.collectionVariables.set(\"test_leave_request_id\", jsonData.data.id);",
                   "}"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "a06843fc-0a97-47f7-b20d-dd0b4a261e1b"
               }
             }
           ],
+          "id": "9a8aeac5-d5d6-4384-99e7-cc8c439f9940",
           "request": {
             "method": "POST",
             "header": [
@@ -1474,10 +1868,17 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/leave-requests",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "leave-requests"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "leave-requests"
+              ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Leave Requests",
@@ -1495,10 +1896,12 @@
                   "    pm.expect(jsonData.data).to.be.an('array');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "cf42f6ea-39ad-4fd5-b061-889490a4919f"
               }
             }
           ],
+          "id": "1d220296-14c2-497f-a1c0-5234faca42a6",
           "request": {
             "method": "GET",
             "header": [
@@ -1509,8 +1912,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/leave-requests?page=1&per_page=20",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "leave-requests"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "leave-requests"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -1522,7 +1931,8 @@
                 }
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Leave Quotas",
@@ -1540,10 +1950,12 @@
                   "    pm.expect(jsonData.data).to.be.an('array');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "36c2af53-0fd8-40a6-97d5-dd45df9b8913"
               }
             }
           ],
+          "id": "7d94bed8-0ced-494d-b4bf-67ca6a10cd8c",
           "request": {
             "method": "GET",
             "header": [
@@ -1554,12 +1966,22 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/leave-quotas/by-user/{{user_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "leave-quotas", "by-user", "{{user_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "leave-quotas",
+                "by-user",
+                "{{user_id}}"
+              ]
             }
-          }
+          },
+          "response": []
         }
-      ]
+      ],
+      "id": "b625d164-92c0-4e6b-9c58-ccbf2d0b12dd"
     },
     {
       "name": "11. Master Data Management",
@@ -1580,10 +2002,12 @@
                   "    pm.expect(jsonData.data).to.be.an('array');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "34dd7ba5-e939-404d-a60b-abc913908d65"
               }
             }
           ],
+          "id": "a24225d3-26f4-4493-94a0-f872011bf302",
           "request": {
             "method": "GET",
             "header": [
@@ -1594,8 +2018,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/study-programs?page=1&per_page=20",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "study-programs"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "study-programs"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -1607,7 +2037,8 @@
                 }
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Create Study Program",
@@ -1627,10 +2058,12 @@
                   "    pm.expect(jsonData.data).to.have.property('name');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "54c12429-1aff-46aa-95bd-474a50bf0ca5"
               }
             }
           ],
+          "id": "d6489bad-b058-4c28-b78a-3c0d0be2a991",
           "request": {
             "method": "POST",
             "header": [
@@ -1649,11 +2082,18 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/study-programs",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "study-programs"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "study-programs"
+              ]
             },
             "description": "Create study program (Dosen/Staff only)"
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Active Academic Period",
@@ -1671,10 +2111,12 @@
                   "    pm.expect(jsonData.data).to.have.property('period_code');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "e7300ec6-5602-49db-abff-de93e87003d2"
               }
             }
           ],
+          "id": "cfd771cd-081c-4e7e-a450-0927287f0586",
           "request": {
             "method": "GET",
             "header": [
@@ -1685,12 +2127,21 @@
             ],
             "url": {
               "raw": "{{base_url}}/api/v1/academic-periods/active",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "academic-periods", "active"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "academic-periods",
+                "active"
+              ]
             }
-          }
+          },
+          "response": []
         }
-      ]
+      ],
+      "id": "3a018e97-de15-4c71-9b44-e1326e342a89"
     },
     {
       "name": "12. Error Scenarios",
@@ -1712,10 +2163,12 @@
                   "    pm.expect(jsonData.error.code).to.include('VALIDATION');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "25802a5c-2dff-4089-9d21-3dc34f56d00a"
               }
             }
           ],
+          "id": "422b9a00-2101-4bc2-a34b-1c996fd0fe04",
           "request": {
             "method": "POST",
             "header": [
@@ -1734,11 +2187,18 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/courses",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "courses"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "courses"
+              ]
             },
             "description": "Test validation error handling"
-          }
+          },
+          "response": []
         },
         {
           "name": "Update Non-Existent Course",
@@ -1757,10 +2217,12 @@
                   "    pm.expect(jsonData.error.code).to.include('NOT_FOUND');",
                   "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "id": "9be1ccf1-f684-4556-b307-cbcd4368eccd"
               }
             }
           ],
+          "id": "9a7de0ef-5aa2-4b48-b796-9c7fed573053",
           "request": {
             "method": "PUT",
             "header": [
@@ -1779,7 +2241,9 @@
             },
             "url": {
               "raw": "{{base_url}}/api/v1/courses/00000000-0000-0000-0000-000000000000",
-              "host": ["{{base_url}}"],
+              "host": [
+                "{{base_url}}"
+              ],
               "path": [
                 "api",
                 "v1",
@@ -1788,78 +2252,91 @@
               ]
             },
             "description": "Test 404 error handling"
-          }
+          },
+          "response": []
         }
-      ]
+      ],
+      "id": "d4fefeb2-1241-46f7-b224-234a708b62b4"
     }
   ],
   "variable": [
     {
+      "id": "ebc443f1-4942-4c11-995c-62c85f997f1e",
       "key": "base_url",
       "value": "http://localhost:8080",
       "type": "string"
     },
     {
+      "id": "116d0449-abbf-4309-86a4-9f9987dbda4b",
       "key": "access_token",
       "value": "",
       "type": "string"
     },
     {
+      "id": "4e1fd274-6cb3-4577-9536-c0b0cae34609",
       "key": "refresh_token",
       "value": "",
       "type": "string"
     },
     {
+      "id": "194263dc-67cd-4bba-8f6f-9dd65b7d5462",
       "key": "user_id",
       "value": "",
       "type": "string"
     },
     {
+      "id": "91fd6661-3c33-46c6-a348-34d600476c80",
       "key": "test_dosen_email",
       "value": "test.dosen@unsri.ac.id",
       "type": "string"
     },
     {
+      "id": "3c52a62e-0d96-4454-8180-4662074032d9",
       "key": "test_dosen_id",
       "value": "",
       "type": "string"
     },
     {
+      "id": "24efae33-d15f-4c21-a26d-0c69f1fcac4c",
       "key": "test_course_id",
       "value": "",
       "type": "string"
     },
     {
+      "id": "13f8a691-badf-411d-a6db-1faaf001d369",
       "key": "test_class_id",
       "value": "",
       "type": "string"
     },
     {
+      "id": "337aa86f-ab5a-4f62-9375-24b8d29c88a3",
       "key": "test_enrollment_id",
       "value": "",
       "type": "string"
     },
     {
+      "id": "2ee83a7a-ed4d-4bef-8eba-9aa8f0e13675",
       "key": "test_schedule_id",
       "value": "",
       "type": "string"
     },
     {
+      "id": "16cccbd2-c2fd-4394-9423-eb69b67ab03c",
       "key": "test_qr_code",
       "value": "",
       "type": "string"
     },
     {
+      "id": "95b30b41-5634-498c-9c98-c728d6ca165b",
       "key": "test_broadcast_id",
       "value": "",
       "type": "string"
     },
     {
+      "id": "347c8052-a508-4b8d-bfdd-ec820338f58c",
       "key": "test_leave_request_id",
       "value": "",
       "type": "string"
     }
   ]
 }
-
-
