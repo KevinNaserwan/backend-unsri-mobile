@@ -30,10 +30,11 @@ func (s *UserService) GetUserProfile(ctx context.Context, userID string) (*model
 
 // UpdateUserProfileRequest represents update profile request
 type UpdateUserProfileRequest struct {
-	Email     *string                 `json:"email,omitempty"`
-	Mahasiswa *UpdateMahasiswaRequest `json:"mahasiswa,omitempty"`
-	Dosen     *UpdateDosenRequest     `json:"dosen,omitempty"`
-	Staff     *UpdateStaffRequest     `json:"staff,omitempty"`
+	Email           *string                 `json:"email,omitempty"`
+	ProfilePhotoURL *string                 `json:"profile_photo_url,omitempty"`
+	Mahasiswa       *UpdateMahasiswaRequest  `json:"mahasiswa,omitempty"`
+	Dosen           *UpdateDosenRequest     `json:"dosen,omitempty"`
+	Staff           *UpdateStaffRequest     `json:"staff,omitempty"`
 }
 
 // UpdateMahasiswaRequest represents update mahasiswa request
@@ -65,6 +66,10 @@ func (s *UserService) UpdateUserProfile(ctx context.Context, userID string, req 
 
 	if req.Email != nil {
 		user.Email = *req.Email
+	}
+
+	if req.ProfilePhotoURL != nil {
+		user.ProfilePhotoURL = req.ProfilePhotoURL
 	}
 
 	if err := s.repo.UpdateUser(ctx, user); err != nil {
@@ -166,16 +171,23 @@ func (s *UserService) GetStaffByNIP(ctx context.Context, nip string) (*models.St
 
 // UploadAvatarRequest represents avatar upload request
 type UploadAvatarRequest struct {
-	Filename string
-	Data     []byte
-	MimeType string
+	PhotoURL string
 }
 
-// UploadAvatar uploads user avatar
+// UploadAvatar updates user profile photo URL
 func (s *UserService) UploadAvatar(ctx context.Context, userID string, req UploadAvatarRequest) (string, error) {
-	// This would integrate with file storage service
-	// For now, return placeholder
-	return "avatar-url-placeholder", nil
+	user, err := s.repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return "", apperrors.NewNotFoundError("user", userID)
+	}
+
+	user.ProfilePhotoURL = &req.PhotoURL
+
+	if err := s.repo.UpdateUser(ctx, user); err != nil {
+		return "", apperrors.NewInternalError("failed to update profile photo", err)
+	}
+
+	return req.PhotoURL, nil
 }
 
 // ListUsersRequest represents list users request

@@ -34,6 +34,19 @@ type StorageConfig struct {
 	BasePath  string
 	BaseURL   string
 	MaxSize   int64  // in bytes
+	MinIO     MinIOConfig
+}
+
+// MinIOConfig holds MinIO configuration
+type MinIOConfig struct {
+	Endpoint        string
+	AccessKeyID     string
+	SecretAccessKey string
+	UseSSL          bool
+	Region          string
+	BucketProfiles  string
+	BucketSelfies   string
+	BucketDocuments string
 }
 
 // JWTConfig holds JWT configuration
@@ -55,6 +68,14 @@ func Load() *Config {
 	viper.SetDefault("STORAGE_BASE_PATH", "./storage")
 	viper.SetDefault("STORAGE_BASE_URL", "http://localhost:8093/files")
 	viper.SetDefault("STORAGE_MAX_SIZE", 10485760) // 10MB
+	viper.SetDefault("MINIO_ENDPOINT", "localhost:9000")
+	viper.SetDefault("MINIO_ACCESS_KEY", "minioadmin")
+	viper.SetDefault("MINIO_SECRET_KEY", "minioadmin")
+	viper.SetDefault("MINIO_USE_SSL", false)
+	viper.SetDefault("MINIO_REGION", "us-east-1")
+	viper.SetDefault("MINIO_BUCKET_PROFILES", "unsri-profiles")
+	viper.SetDefault("MINIO_BUCKET_SELFIES", "unsri-selfies")
+	viper.SetDefault("MINIO_BUCKET_DOCUMENTS", "unsri-documents")
 	viper.SetDefault("JWT_SECRET", "your-secret-key-change-in-production")
 
 	viper.AutomaticEnv()
@@ -78,6 +99,16 @@ func Load() *Config {
 			BasePath: viper.GetString("STORAGE_BASE_PATH"),
 			BaseURL:  viper.GetString("STORAGE_BASE_URL"),
 			MaxSize:  viper.GetInt64("STORAGE_MAX_SIZE"),
+			MinIO: MinIOConfig{
+				Endpoint:        viper.GetString("MINIO_ENDPOINT"),
+				AccessKeyID:     viper.GetString("MINIO_ACCESS_KEY"),
+				SecretAccessKey: viper.GetString("MINIO_SECRET_KEY"),
+				UseSSL:          viper.GetBool("MINIO_USE_SSL"),
+				Region:          viper.GetString("MINIO_REGION"),
+				BucketProfiles:  viper.GetString("MINIO_BUCKET_PROFILES"),
+				BucketSelfies:   viper.GetString("MINIO_BUCKET_SELFIES"),
+				BucketDocuments: viper.GetString("MINIO_BUCKET_DOCUMENTS"),
+			},
 		},
 		JWT: JWTConfig{
 			SecretKey: viper.GetString("JWT_SECRET"),

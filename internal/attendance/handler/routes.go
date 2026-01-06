@@ -48,7 +48,7 @@ func SetupRoutes(router *gin.Engine, handler *AttendanceHandler, jwtToken *jwt.J
 		schedules.DELETE("/:id", middleware.RoleMiddleware("dosen", "staff"), handler.DeleteSchedule)
 	}
 
-	// Work Attendance (HRIS) routes
+	// Work Attendance (Kepegawaian) routes
 	workAttendance := router.Group("/api/v1/work-attendance")
 	workAttendance.Use(middleware.AuthMiddleware(jwtToken))
 	{

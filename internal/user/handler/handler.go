@@ -1,11 +1,19 @@
 package handler
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"time"
 
 	"unsri-backend/internal/shared/logger"
 	"unsri-backend/internal/shared/utils"
 	"unsri-backend/internal/user/service"
+	apperrors "unsri-backend/internal/shared/errors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -138,30 +146,25 @@ func (h *UserHandler) GetStaffByNIP(c *gin.Context) {
 func (h *UserHandler) UploadAvatar(c *gin.Context) {
 	userID := c.GetString("user_id")
 
-	file, err := c.FormFile("avatar")
+	file, err := c.FormFile("photo")
 	if err != nil {
-		utils.BadRequestResponse(c, "Avatar file is required")
-		return
+		// Try alternative field name
+		file, err = c.FormFile("avatar")
+		if err != nil {
+			utils.BadRequestResponse(c, "Photo file is required (use 'photo' or 'avatar' field)")
+			return
+		}
 	}
 
-	// Read file
-	src, err := file.Open()
+	// Upload file to file storage service
+	photoURL, err := h.uploadPhotoToStorage(c.Request.Context(), userID, file)
 	if err != nil {
-		utils.BadRequestResponse(c, "Failed to open avatar file")
-		return
-	}
-	defer src.Close()
-
-	data := make([]byte, file.Size)
-	if _, err := src.Read(data); err != nil {
-		utils.BadRequestResponse(c, "Failed to read avatar file")
+		utils.ErrorResponse(c, 0, err)
 		return
 	}
 
 	req := service.UploadAvatarRequest{
-		Filename: file.Filename,
-		Data:     data,
-		MimeType: file.Header.Get("Content-Type"),
+		PhotoURL: photoURL,
 	}
 
 	avatarURL, err := h.service.UploadAvatar(c.Request.Context(), userID, req)
@@ -170,7 +173,10 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusOK, gin.H{"avatar_url": avatarURL})
+	utils.SuccessResponse(c, http.StatusOK, gin.H{
+		"profile_photo_url": avatarURL,
+		"message":           "Profile photo uploaded successfully",
+	})
 }
 
 // ListUsers handles list all users request (admin only)
@@ -272,4 +278,74 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	}
 
 	utils.SuccessResponse(c, http.StatusCreated, result)
+}
+
+// uploadPhotoToStorage uploads photo to file storage service
+func (h *UserHandler) uploadPhotoToStorage(ctx context.Context, userID string, file *multipart.FileHeader) (string, error) {
+	// Open the uploaded file
+	src, err := file.Open()
+	if err != nil {
+		return "", apperrors.NewInternalError("failed to open uploaded file", err)
+	}
+	defer src.Close()
+
+	// Create multipart form data
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+
+	// Add file field
+	part, err := writer.CreateFormFile("file", file.Filename)
+	if err != nil {
+		return "", apperrors.NewInternalError("failed to create form file", err)
+	}
+	
+	if _, err := io.Copy(part, src); err != nil {
+		return "", apperrors.NewInternalError("failed to copy file data", err)
+	}
+
+	// Add file_type field
+	if err := writer.WriteField("file_type", "profile"); err != nil {
+		return "", apperrors.NewInternalError("failed to write file_type field", err)
+	}
+
+	// Add is_public field
+	if err := writer.WriteField("is_public", "true"); err != nil {
+		return "", apperrors.NewInternalError("failed to write is_public field", err)
+	}
+
+	writer.Close()
+
+	// Create HTTP request to file storage service
+	req, err := http.NewRequestWithContext(ctx, "POST", "http://localhost:8093/api/v1/files/upload", &buf)
+	if err != nil {
+		return "", apperrors.NewInternalError("failed to create upload request", err)
+	}
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("User-ID", userID) // Pass user ID for authentication
+
+	// Send request
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", apperrors.NewInternalError("failed to upload file", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return "", apperrors.NewInternalError("file upload failed", fmt.Errorf("status: %d", resp.StatusCode))
+	}
+
+	// Parse response
+	var uploadResp struct {
+		Data struct {
+			URL string `json:"url"`
+		} `json:"data"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&uploadResp); err != nil {
+		return "", apperrors.NewInternalError("failed to parse upload response", err)
+	}
+
+	return uploadResp.Data.URL, nil
 }

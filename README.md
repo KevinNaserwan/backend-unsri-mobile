@@ -95,7 +95,7 @@ Backend ini menggunakan arsitektur microservices dengan teknologi:
 15. **Search Service** (`:8094`) - Pencarian data akademik
 16. **Report Service** (`:8095`) - Generate laporan
 17. **Master Data Service** (`:8096`) - Master data management (Study Programs, Academic Periods, Rooms)
-18. **Leave Management Service** (`:8097`) - HRIS leave management (Leave requests, quotas, approvals)
+18. **Leave Management Service** (`:8097`) - Kepegawaian leave management (Leave requests, quotas, approvals)
 
 ## 👥 Roles
 

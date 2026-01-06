@@ -21,7 +21,8 @@ func SetupRoutes(router *gin.Engine, handler *UserHandler, jwtToken *jwt.JWT) {
 		// User profile (self)
 		v1.GET("/profile", handler.GetProfile)
 		v1.PUT("/profile", handler.UpdateProfile)
-		v1.POST("/avatar", handler.UploadAvatar)
+		v1.POST("/profile/photo", handler.UploadAvatar)
+		v1.POST("/avatar", handler.UploadAvatar) // Keep for backward compatibility
 
 		// Search users
 		v1.GET("/search", handler.SearchUsers)

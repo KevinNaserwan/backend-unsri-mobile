@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Enrollment by class filtering
 - ✅ Full CRUD operations for enrollments
 
-**Work Attendance Module (HRIS) - Port: 8084**
+**Work Attendance Module (Kepegawaian) - Port: 8084**
 
 - ✅ Shift Pattern management (create, read, update, delete)
 - ✅ User Shift assignment with effective dates
@@ -42,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Work Attendance Records with filtering & pagination
 - ✅ Full integration with Attendance Service
 
-**Leave Management Module (HRIS) - Port: 8097**
+**Leave Management Module (Kepegawaian) - Port: 8097**
 
 - ✅ Leave Request management (create, approve, reject, cancel)
 - ✅ Leave Quota management per user, type, and year

@@ -157,6 +157,7 @@ type WorkAttendanceRecord struct {
 	Latitude       *float64             `json:"latitude,omitempty"`
 	Longitude      *float64             `json:"longitude,omitempty"`
 	GeofenceID     *string              `gorm:"type:uuid;index" json:"geofence_id,omitempty"`
+	SelfieURL      *string              `gorm:"type:varchar(500)" json:"selfie_url,omitempty"` // Selfie photo URL for check-in/out
 	Notes          string               `gorm:"type:text" json:"notes"`
 	CreatedAt      time.Time            `json:"created_at"`
 	UpdatedAt      time.Time            `json:"updated_at"`

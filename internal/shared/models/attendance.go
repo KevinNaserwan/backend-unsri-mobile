@@ -69,6 +69,7 @@ type Attendance struct {
 	CheckOutTime *time.Time `json:"check_out_time"` // For tap out
 	Latitude  *float64 `json:"latitude"` // Location latitude
 	Longitude *float64 `json:"longitude"` // Location longitude
+	SelfieURL *string  `gorm:"type:varchar(500)" json:"selfie_url,omitempty"` // Selfie photo URL for tap in/out
 	Notes     string   `gorm:"type:text" json:"notes"`
 	CreatedBy *string  `gorm:"type:uuid" json:"created_by"` // For manual entry
 	CreatedAt time.Time `json:"created_at"`

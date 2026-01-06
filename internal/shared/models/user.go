@@ -18,14 +18,15 @@ const (
 
 // User represents a user in the system
 type User struct {
-	ID           string         `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	Email        string         `gorm:"uniqueIndex;not null" json:"email"`
-	PasswordHash string         `gorm:"not null" json:"-"`
-	Role         UserRole       `gorm:"type:varchar(20);not null" json:"role"`
-	IsActive     bool           `gorm:"default:true" json:"is_active"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
-	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+	ID             string         `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	Email          string         `gorm:"uniqueIndex;not null" json:"email"`
+	PasswordHash   string         `gorm:"not null" json:"-"`
+	Role           UserRole       `gorm:"type:varchar(20);not null" json:"role"`
+	ProfilePhotoURL *string        `gorm:"type:varchar(500)" json:"profile_photo_url,omitempty"`
+	IsActive       bool           `gorm:"default:true" json:"is_active"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// Relations
 	Mahasiswa *Mahasiswa `gorm:"foreignKey:UserID" json:"mahasiswa,omitempty"`

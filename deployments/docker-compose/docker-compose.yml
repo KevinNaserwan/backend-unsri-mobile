@@ -55,6 +55,27 @@ services:
     networks:
       - unsri-network
 
+  minio:
+    image: minio/minio:latest
+    container_name: unsri-minio
+    ports:
+      - "9000:9000" # API port
+      - "9001:9001" # Console port
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - unsri-network
+    restart: unless-stopped
+
   auth-service:
     build:
       context: ../..
@@ -377,15 +398,25 @@ services:
       - DATABASE_PASSWORD=unsri_pass
       - DATABASE_NAME=unsri_db
       - DATABASE_SSLMODE=disable
-      - STORAGE_TYPE=local
+      - STORAGE_TYPE=minio
       - STORAGE_BASE_PATH=/storage
       - STORAGE_BASE_URL=http://localhost:8093/files
       - STORAGE_MAX_SIZE=10485760
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_USE_SSL=false
+      - MINIO_REGION=us-east-1
+      - MINIO_BUCKET_PROFILES=unsri-profiles
+      - MINIO_BUCKET_SELFIES=unsri-selfies
+      - MINIO_BUCKET_DOCUMENTS=unsri-documents
       - JWT_SECRET=your-secret-key-change-in-production
     volumes:
       - file_storage:/storage
     depends_on:
       postgres:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     networks:
       - unsri-network
@@ -521,6 +552,7 @@ volumes:
   redis_data:
   rabbitmq_data:
   file_storage:
+  minio_data:
 
 networks:
   unsri-network:
