@@ -487,77 +487,31 @@ services:
       - unsri-network
     restart: unless-stopped
 
-  api-gateway:
-    build:
-      context: ../..
-      dockerfile: deployments/docker/Dockerfile.api-gateway
-    container_name: unsri-api-gateway
+  nginx:
+    image: nginx:alpine
+    container_name: unsri-nginx
     ports:
       - "8080:8080"
-    environment:
-      - PORT=8080
-      - LOG_LEVEL=info
-      - ENABLE_SWAGGER=${ENABLE_SWAGGER:-false}
-      - AUTH_SERVICE_URL=http://auth-service:8081
-      - USER_SERVICE_URL=http://user-service:8082
-      - ATTENDANCE_SERVICE_URL=http://attendance-service:8084
-      - SCHEDULE_SERVICE_URL=http://schedule-service:8083
-      - QR_SERVICE_URL=http://qr-service:8085
-      - COURSE_SERVICE_URL=http://course-service:8089
-      - BROADCAST_SERVICE_URL=http://broadcast-service:8086
-      - NOTIFICATION_SERVICE_URL=http://notification-service:8087
-      - CALENDAR_SERVICE_URL=http://calendar-service:8088
-      - LOCATION_SERVICE_URL=http://location-service:8090
-      - ACCESS_SERVICE_URL=http://access-service:8091
-      - QUICK_ACTIONS_SERVICE_URL=http://quick-actions-service:8092
-      - FILE_SERVICE_URL=http://file-storage-service:8093
-      - SEARCH_SERVICE_URL=http://search-service:8094
-      - REPORT_SERVICE_URL=http://report-service:8095
-      - MASTER_DATA_SERVICE_URL=http://master-data-service:8096
-      - LEAVE_SERVICE_URL=http://leave-service:8097
-      - JWT_SECRET=your-secret-key-change-in-production
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=unsri_user
-      - RABBITMQ_PASSWORD=unsri_pass
-      - RABBITMQ_VHOST=/
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      rabbitmq:
-        condition: service_healthy
-      auth-service:
-        condition: service_started
-      user-service:
-        condition: service_started
-      attendance-service:
-        condition: service_started
-      schedule-service:
-        condition: service_started
-      qr-service:
-        condition: service_started
-      course-service:
-        condition: service_started
-      broadcast-service:
-        condition: service_started
-      notification-service:
-        condition: service_started
-      calendar-service:
-        condition: service_started
-      location-service:
-        condition: service_started
-      access-service:
-        condition: service_started
-      quick-actions-service:
-        condition: service_started
-      file-storage-service:
-        condition: service_started
-      search-service:
-        condition: service_started
-      report-service:
-        condition: service_started
-      master-data-service:
-        condition: service_started
-      leave-service:
-        condition: service_started
+      - auth-service
+      - user-service
+      - attendance-service
+      - schedule-service
+      - qr-service
+      - course-service
+      - broadcast-service
+      - notification-service
+      - calendar-service
+      - location-service
+      - access-service
+      - quick-actions-service
+      - file-storage-service
+      - search-service
+      - report-service
+      - master-data-service
+      - leave-service
     networks:
       - unsri-network
     restart: unless-stopped

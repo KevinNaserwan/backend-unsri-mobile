@@ -48,9 +48,6 @@ run_in_terminal() {
 # Run each service in separate terminal
 echo -e "${BLUE}Starting services in separate terminals...${NC}"
 
-run_in_terminal "API Gateway" "go run ./cmd/api-gateway"
-sleep 1
-
 run_in_terminal "Auth Service" "go run ./cmd/auth-service"
 sleep 1
 

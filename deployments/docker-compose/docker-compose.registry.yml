@@ -56,46 +56,6 @@ services:
     networks:
       - unsri-network
 
-  api-gateway:
-    image: ${REGISTRY:-your-registry.com}/unsri-api-gateway:${VERSION:-latest}
-    container_name: unsri-api-gateway
-    ports:
-      - "8080:8080"
-    environment:
-      - PORT=8080
-      - LOG_LEVEL=info
-      - ENABLE_SWAGGER=true
-      - RABBITMQ_HOST=unsri-rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=unsri_user
-      - RABBITMQ_PASSWORD=unsri_pass
-      - RABBITMQ_VHOST=/
-      - RABBITMQ_URL=amqp://unsri_user:unsri_pass@unsri-rabbitmq:5672/
-      - AUTH_SERVICE_URL=http://auth-service:8081
-      - USER_SERVICE_URL=http://user-service:8082
-      - ATTENDANCE_SERVICE_URL=http://attendance-service:8084
-      - SCHEDULE_SERVICE_URL=http://schedule-service:8083
-      - QR_SERVICE_URL=http://qr-service:8085
-      - COURSE_SERVICE_URL=http://course-service:8089
-      - BROADCAST_SERVICE_URL=http://broadcast-service:8086
-      - NOTIFICATION_SERVICE_URL=http://notification-service:8087
-      - CALENDAR_SERVICE_URL=http://calendar-service:8088
-      - LOCATION_SERVICE_URL=http://location-service:8090
-      - ACCESS_SERVICE_URL=http://access-service:8091
-      - QUICK_ACTIONS_SERVICE_URL=http://quick-actions-service:8092
-      - FILE_SERVICE_URL=http://file-storage-service:8093
-      - SEARCH_SERVICE_URL=http://search-service:8094
-      - REPORT_SERVICE_URL=http://report-service:8095
-      - MASTER_DATA_SERVICE_URL=http://master-data-service:8096
-      - LEAVE_SERVICE_URL=http://leave-service:8097
-      - JWT_SECRET=your-secret-key-change-in-production
-    depends_on:
-      - auth-service
-      - user-service
-    networks:
-      - unsri-network
-    restart: unless-stopped
-
   auth-service:
     image: ${REGISTRY:-your-registry.com}/unsri-auth-service:${VERSION:-latest}
     container_name: unsri-auth-service

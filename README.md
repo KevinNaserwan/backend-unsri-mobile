@@ -135,8 +135,8 @@ make migrate-up
 
 ```bash
 # Opsi A: Manual (buka terminal terpisah untuk setiap service)
-make run-api-gateway
 make run-auth-service
+make run-user-service
 # ... (service lainnya)
 
 # Opsi B: Docker Compose (semua services)
@@ -165,12 +165,7 @@ Setelah service berjalan, akses Swagger UI di:
 http://localhost:8080/swagger/index.html
 ```
 
-Untuk enable Swagger:
-
-```bash
-export ENABLE_SWAGGER=true
-make run-api-gateway
-```
+Note: API Gateway telah diganti dengan Nginx reverse proxy. Swagger dapat di-generate per-service jika diperlukan.
 
 ### Postman Collection
 
@@ -223,11 +218,10 @@ Lihat [API Documentation](./docs/API.md) untuk dokumentasi lengkap semua endpoin
 ```
 backend-unsri-mobile/
 ├── cmd/                    # Service entry points
-│   ├── api-gateway/
 │   ├── auth-service/
+│   ├── user-service/
 │   └── ...
 ├── internal/               # Internal packages
-│   ├── api-gateway/
 │   ├── auth/
 │   │   ├── config/
 │   │   ├── handler/
@@ -256,10 +250,10 @@ backend-unsri-mobile/
 
 ```bash
 # Terminal 1
-make run-api-gateway
+make run-auth-service
 
 # Terminal 2
-make run-auth-service
+make run-user-service
 
 # Terminal 3
 make run-user-service
@@ -301,7 +295,7 @@ Build hanya service tertentu untuk development cepat:
 make docker-build-partial SERVICE=auth-service
 
 # Build multiple services
-make docker-build-partial SERVICE="auth-service user-service api-gateway"
+make docker-build-partial SERVICE="auth-service user-service"
 
 # Build dengan no-cache
 make docker-build-partial SERVICE=auth-service ARGS="--no-cache"
@@ -315,8 +309,8 @@ Lihat [Docker Build Partial Documentation](./docs/DOCKER_BUILD_PARTIAL.md) untuk
 ### Code Generation
 
 ```bash
-# Generate Swagger docs
-swag init -g cmd/api-gateway/main.go
+# Generate Swagger docs (per-service if needed)
+# swag init -g cmd/<service-name>/main.go
 
 # Format code
 make fmt
