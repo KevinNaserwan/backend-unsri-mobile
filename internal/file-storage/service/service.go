@@ -7,18 +7,21 @@ import (
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"time"
 
 	"unsri-backend/internal/file-storage/repository"
 	apperrors "unsri-backend/internal/shared/errors"
 	"unsri-backend/internal/shared/models"
+	"unsri-backend/internal/shared/storage"
 
 	"github.com/google/uuid"
 )
 
 // FileStorageService handles file storage business logic
 type FileStorageService struct {
-	repo   *repository.FileRepository
-	config StorageConfig
+	repo      *repository.FileRepository
+	config    StorageConfig
+	minioClient *storage.MinIOClient
 }
 
 // StorageConfig holds storage configuration
@@ -27,13 +30,27 @@ type StorageConfig struct {
 	BasePath string
 	BaseURL  string
 	MaxSize  int64
+	MinIO    MinIOStorageConfig
+}
+
+// MinIOStorageConfig holds MinIO storage configuration
+type MinIOStorageConfig struct {
+	Endpoint        string
+	AccessKeyID     string
+	SecretAccessKey string
+	UseSSL          bool
+	Region          string
+	BucketProfiles  string
+	BucketSelfies   string
+	BucketDocuments string
 }
 
 // NewFileStorageService creates a new file storage service
-func NewFileStorageService(repo *repository.FileRepository, config StorageConfig) *FileStorageService {
+func NewFileStorageService(repo *repository.FileRepository, config StorageConfig, minioClient *storage.MinIOClient) *FileStorageService {
 	return &FileStorageService{
-		repo:   repo,
-		config: config,
+		repo:        repo,
+		config:      config,
+		minioClient: minioClient,
 	}
 }
 
@@ -54,29 +71,53 @@ func (s *FileStorageService) UploadFile(ctx context.Context, userID string, req 
 	// Generate unique filename
 	ext := filepath.Ext(req.File.Filename)
 	fileName := fmt.Sprintf("%s%s", uuid.New().String(), ext)
+	objectName := fmt.Sprintf("%s/%s", req.FileType, fileName)
 
-	// Create directory if not exists
-	fileDir := filepath.Join(s.config.BasePath, req.FileType)
-	if err := os.MkdirAll(fileDir, 0755); err != nil {
-		return nil, apperrors.NewInternalError("failed to create directory", err)
-	}
-
-	// Save file
-	filePath := filepath.Join(fileDir, fileName)
-	dst, err := os.Create(filePath)
-	if err != nil {
-		return nil, apperrors.NewInternalError("failed to create file", err)
-	}
-	defer dst.Close()
-
+	// Open file
 	src, err := req.File.Open()
 	if err != nil {
 		return nil, apperrors.NewInternalError("failed to open file", err)
 	}
 	defer src.Close()
 
-	if _, err := io.Copy(dst, src); err != nil {
-		return nil, apperrors.NewInternalError("failed to save file", err)
+	var fileURL string
+	var filePath string
+
+	// Upload based on storage type
+	if s.config.Type == "minio" && s.minioClient != nil {
+		// Upload to MinIO
+		bucketName := s.getBucketForFileType(req.FileType)
+		if err := s.minioClient.UploadFile(ctx, bucketName, objectName, src, req.File.Size, req.File.Header.Get("Content-Type")); err != nil {
+			return nil, apperrors.NewInternalError("failed to upload file to MinIO", err)
+		}
+
+		// Generate public URL
+		fileURL = s.minioClient.GetPublicURL(bucketName, objectName)
+		filePath = fmt.Sprintf("%s/%s", bucketName, objectName)
+	} else {
+		// Fallback to local storage
+		// Create directory if not exists
+		fileDir := filepath.Join(s.config.BasePath, req.FileType)
+		if err := os.MkdirAll(fileDir, 0755); err != nil {
+			return nil, apperrors.NewInternalError("failed to create directory", err)
+		}
+
+		// Save file
+		filePath = filepath.Join(fileDir, fileName)
+		dst, err := os.Create(filePath)
+		if err != nil {
+			return nil, apperrors.NewInternalError("failed to create file", err)
+		}
+		defer dst.Close()
+
+		// Reset reader position
+		src.Seek(0, 0)
+
+		if _, err := io.Copy(dst, src); err != nil {
+			return nil, apperrors.NewInternalError("failed to save file", err)
+		}
+
+		fileURL = fmt.Sprintf("%s/%s/%s", s.config.BaseURL, req.FileType, fileName)
 	}
 
 	// Create file record
@@ -88,16 +129,34 @@ func (s *FileStorageService) UploadFile(ctx context.Context, userID string, req 
 		MimeType:     req.File.Header.Get("Content-Type"),
 		Size:         req.File.Size,
 		Path:         filePath,
-		URL:          fmt.Sprintf("%s/%s/%s", s.config.BaseURL, req.FileType, fileName),
+		URL:          fileURL,
 		IsPublic:     req.IsPublic,
 	}
 
 	if err := s.repo.CreateFile(ctx, file); err != nil {
-		_ = os.Remove(filePath) // Cleanup on error
+		// Cleanup on error
+		if s.config.Type == "minio" && s.minioClient != nil {
+			bucketName := s.getBucketForFileType(req.FileType)
+			_ = s.minioClient.DeleteFile(ctx, bucketName, objectName)
+		} else {
+			_ = os.Remove(filePath)
+		}
 		return nil, apperrors.NewInternalError("failed to create file record", err)
 	}
 
 	return file, nil
+}
+
+// getBucketForFileType returns the appropriate bucket name for a file type
+func (s *FileStorageService) getBucketForFileType(fileType string) string {
+	switch fileType {
+	case "avatar", "profile":
+		return s.config.MinIO.BucketProfiles
+	case "selfie":
+		return s.config.MinIO.BucketSelfies
+	default:
+		return s.config.MinIO.BucketDocuments
+	}
 }
 
 // GetFileByID gets a file by ID
@@ -144,8 +203,16 @@ func (s *FileStorageService) DeleteFile(ctx context.Context, id string, userID s
 	}
 
 	// Delete physical file
-	if err := os.Remove(file.Path); err != nil && !os.IsNotExist(err) {
-		return apperrors.NewInternalError("failed to delete file", err)
+	if s.config.Type == "minio" && s.minioClient != nil {
+		bucketName := s.getBucketForFileType(file.FileType)
+		objectName := fmt.Sprintf("%s/%s", file.FileType, file.FileName)
+		if err := s.minioClient.DeleteFile(ctx, bucketName, objectName); err != nil {
+			return apperrors.NewInternalError("failed to delete file from MinIO", err)
+		}
+	} else {
+		if err := os.Remove(file.Path); err != nil && !os.IsNotExist(err) {
+			return apperrors.NewInternalError("failed to delete file", err)
+		}
 	}
 
 	// Delete record
@@ -162,7 +229,14 @@ func (s *FileStorageService) UploadAvatar(ctx context.Context, userID string, re
 	// Delete old avatar
 	oldAvatar, _ := s.repo.GetAvatarByUserID(ctx, userID)
 	if oldAvatar != nil {
-		_ = os.Remove(oldAvatar.Path)
+		if s.config.Type == "minio" && s.minioClient != nil {
+			// Extract bucket and object name from path
+			bucketName := s.getBucketForFileType("avatar")
+			objectName := fmt.Sprintf("avatar/%s", oldAvatar.FileName)
+			_ = s.minioClient.DeleteFile(ctx, bucketName, objectName)
+		} else {
+			_ = os.Remove(oldAvatar.Path)
+		}
 		_ = s.repo.DeleteFile(ctx, oldAvatar.ID)
 	}
 
@@ -199,10 +273,35 @@ func (s *FileStorageService) GetFileContent(ctx context.Context, id string) ([]b
 		return nil, "", apperrors.NewNotFoundError("file", id)
 	}
 
+	if s.config.Type == "minio" && s.minioClient != nil {
+		// For MinIO, return URL instead of content
+		// Client should fetch from URL directly
+		return nil, "", apperrors.NewBadRequestError("file stored in MinIO, use URL to access")
+	}
+
 	content, err := os.ReadFile(file.Path)
 	if err != nil {
 		return nil, "", apperrors.NewInternalError("failed to read file", err)
 	}
 
 	return content, file.MimeType, nil
+}
+
+// UploadToMinIO uploads a file directly to MinIO (helper method)
+func (s *FileStorageService) UploadToMinIO(ctx context.Context, bucketName, objectName string, reader io.Reader, size int64, contentType string) error {
+	if s.minioClient == nil {
+		return apperrors.NewInternalError("MinIO client not initialized", nil)
+	}
+	return s.minioClient.UploadFile(ctx, bucketName, objectName, reader, size, contentType)
+}
+
+// GetMinIOURL generates a URL for a file in MinIO
+func (s *FileStorageService) GetMinIOURL(ctx context.Context, bucketName, objectName string, expires time.Duration) (string, error) {
+	if s.minioClient == nil {
+		return "", apperrors.NewInternalError("MinIO client not initialized", nil)
+	}
+	if expires == 0 {
+		expires = 7 * 24 * time.Hour // Default 7 days
+	}
+	return s.minioClient.GetFileURL(ctx, bucketName, objectName, expires)
 }

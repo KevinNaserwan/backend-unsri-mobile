@@ -1,6 +1,12 @@
 package handler
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"time"
 
@@ -8,6 +14,7 @@ import (
 	"unsri-backend/internal/attendance/service"
 	"unsri-backend/internal/shared/logger"
 	"unsri-backend/internal/shared/utils"
+	apperrors "unsri-backend/internal/shared/errors"
 )
 
 // AttendanceHandler handles HTTP requests for attendance
@@ -47,9 +54,30 @@ func (h *AttendanceHandler) GenerateQR(c *gin.Context) {
 func (h *AttendanceHandler) ScanQR(c *gin.Context) {
 	userID := c.GetString("user_id")
 
+	// Handle multipart form (for selfie upload)
 	var req service.ScanQRRequest
+	
+	// Try to bind JSON first (for backward compatibility)
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ValidationErrorResponse(c, err)
+		// If JSON binding fails, try multipart form
+		if err := c.ShouldBind(&req); err != nil {
+			utils.ValidationErrorResponse(c, err)
+			return
+		}
+	}
+
+	// Handle selfie file upload if present
+	if selfieFile, err := c.FormFile("selfie"); err == nil {
+		// Upload selfie to file storage service
+		selfieURL, uploadErr := h.uploadSelfieToStorage(c.Request.Context(), userID, selfieFile)
+		if uploadErr != nil {
+			utils.ErrorResponse(c, 0, uploadErr)
+			return
+		}
+		req.SelfieURL = &selfieURL
+	} else {
+		// Selfie is required for attendance
+		utils.BadRequestResponse(c, "Selfie photo is required")
 		return
 	}
 
@@ -374,7 +402,7 @@ func (h *AttendanceHandler) GetTodaySchedules(c *gin.Context) {
 	utils.SuccessResponse(c, 200, schedules)
 }
 
-// ========== Work Attendance (HRIS) Handlers ==========
+// ========== Work Attendance (Kepegawaian) Handlers ==========
 
 // CreateShiftPattern handles create shift pattern request
 func (h *AttendanceHandler) CreateShiftPattern(c *gin.Context) {
@@ -548,8 +576,28 @@ func (h *AttendanceHandler) CheckIn(c *gin.Context) {
 	userID := c.GetString("user_id")
 
 	var req service.CheckInRequest
+	
+	// Try to bind JSON first (for backward compatibility)
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ValidationErrorResponse(c, err)
+		// If JSON binding fails, try multipart form
+		if err := c.ShouldBind(&req); err != nil {
+			utils.ValidationErrorResponse(c, err)
+			return
+		}
+	}
+
+	// Handle selfie file upload if present
+	if selfieFile, err := c.FormFile("selfie"); err == nil {
+		// Upload selfie to file storage service
+		selfieURL, uploadErr := h.uploadSelfieToStorage(c.Request.Context(), userID, selfieFile)
+		if uploadErr != nil {
+			utils.ErrorResponse(c, 0, uploadErr)
+			return
+		}
+		req.SelfieURL = &selfieURL
+	} else {
+		// Selfie is required for check-in
+		utils.BadRequestResponse(c, "Selfie photo is required for check-in")
 		return
 	}
 
@@ -567,8 +615,28 @@ func (h *AttendanceHandler) CheckOut(c *gin.Context) {
 	userID := c.GetString("user_id")
 
 	var req service.CheckOutRequest
+	
+	// Try to bind JSON first (for backward compatibility)
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ValidationErrorResponse(c, err)
+		// If JSON binding fails, try multipart form
+		if err := c.ShouldBind(&req); err != nil {
+			utils.ValidationErrorResponse(c, err)
+			return
+		}
+	}
+
+	// Handle selfie file upload if present
+	if selfieFile, err := c.FormFile("selfie"); err == nil {
+		// Upload selfie to file storage service
+		selfieURL, uploadErr := h.uploadSelfieToStorage(c.Request.Context(), userID, selfieFile)
+		if uploadErr != nil {
+			utils.ErrorResponse(c, 0, uploadErr)
+			return
+		}
+		req.SelfieURL = &selfieURL
+	} else {
+		// Selfie is required for check-out
+		utils.BadRequestResponse(c, "Selfie photo is required for check-out")
 		return
 	}
 
@@ -610,5 +678,75 @@ func (h *AttendanceHandler) GetWorkAttendanceRecords(c *gin.Context) {
 	}
 
 	utils.PaginatedResponse(c, records, page, perPage, total)
+}
+
+// uploadSelfieToStorage uploads selfie to file storage service
+func (h *AttendanceHandler) uploadSelfieToStorage(ctx context.Context, userID string, file *multipart.FileHeader) (string, error) {
+	// Open the uploaded file
+	src, err := file.Open()
+	if err != nil {
+		return "", apperrors.NewInternalError("failed to open uploaded file", err)
+	}
+	defer src.Close()
+
+	// Create multipart form data
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+
+	// Add file field
+	part, err := writer.CreateFormFile("file", file.Filename)
+	if err != nil {
+		return "", apperrors.NewInternalError("failed to create form file", err)
+	}
+	
+	if _, err := io.Copy(part, src); err != nil {
+		return "", apperrors.NewInternalError("failed to copy file data", err)
+	}
+
+	// Add file_type field
+	if err := writer.WriteField("file_type", "selfie"); err != nil {
+		return "", apperrors.NewInternalError("failed to write file_type field", err)
+	}
+
+	// Add is_public field
+	if err := writer.WriteField("is_public", "false"); err != nil {
+		return "", apperrors.NewInternalError("failed to write is_public field", err)
+	}
+
+	writer.Close()
+
+	// Create HTTP request to file storage service
+	req, err := http.NewRequestWithContext(ctx, "POST", "http://localhost:8093/api/v1/files/upload", &buf)
+	if err != nil {
+		return "", apperrors.NewInternalError("failed to create upload request", err)
+	}
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("User-ID", userID) // Pass user ID for authentication
+
+	// Send request
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", apperrors.NewInternalError("failed to upload file", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return "", apperrors.NewInternalError("file upload failed", fmt.Errorf("status: %d", resp.StatusCode))
+	}
+
+	// Parse response
+	var uploadResp struct {
+		Data struct {
+			URL string `json:"url"`
+		} `json:"data"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&uploadResp); err != nil {
+		return "", apperrors.NewInternalError("failed to parse upload response", err)
+	}
+
+	return uploadResp.Data.URL, nil
 }
 

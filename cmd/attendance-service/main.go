@@ -13,6 +13,7 @@ import (
 	"unsri-backend/internal/attendance/handler"
 	"unsri-backend/internal/attendance/repository"
 	"unsri-backend/internal/attendance/service"
+	locationRepo "unsri-backend/internal/location/repository"
 	"unsri-backend/internal/shared/database"
 	"unsri-backend/internal/shared/logger"
 	"unsri-backend/internal/shared/models"
@@ -48,7 +49,7 @@ func main() {
 		&models.Attendance{},
 		&models.AttendanceSession{},
 		&models.Schedule{},
-		// Work Attendance (HRIS) models
+		// Work Attendance (Kepegawaian) models
 		&models.ShiftPattern{},
 		&models.UserShift{},
 		&models.WorkSchedule{},
@@ -65,11 +66,12 @@ func main() {
 		7*24*time.Hour,  // Refresh token TTL
 	)
 
-	// Initialize repository
+	// Initialize repositories
 	attendanceRepo := repository.NewAttendanceRepository(db)
+	locationRepository := locationRepo.NewLocationRepository(db)
 
 	// Initialize service
-	attendanceService := service.NewAttendanceService(attendanceRepo, jwtToken)
+	attendanceService := service.NewAttendanceService(attendanceRepo, locationRepository, jwtToken)
 
 	// Initialize handler
 	attendanceHandler := handler.NewAttendanceHandler(attendanceService, log)

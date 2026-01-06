@@ -360,7 +360,7 @@ func (r *AttendanceRepository) DeleteSchedule(ctx context.Context, id string) er
 	return r.db.WithContext(ctx).Delete(&models.Schedule{}, "id = ?", id).Error
 }
 
-// ========== Work Attendance (HRIS) Repository Methods ==========
+// ========== Work Attendance (Kepegawaian) Repository Methods ==========
 
 // CreateShiftPattern creates a new shift pattern
 func (r *AttendanceRepository) CreateShiftPattern(ctx context.Context, shift *models.ShiftPattern) error {

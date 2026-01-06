@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"unsri-backend/internal/attendance/repository"
+	locationRepo "unsri-backend/internal/location/repository"
 	apperrors "unsri-backend/internal/shared/errors"
 	"unsri-backend/internal/shared/models"
 	"unsri-backend/pkg/jwt"
@@ -14,15 +15,17 @@ import (
 
 // AttendanceService handles attendance business logic
 type AttendanceService struct {
-	repo *repository.AttendanceRepository
-	jwt  *jwt.JWT
+	repo         *repository.AttendanceRepository
+	locationRepo *locationRepo.LocationRepository
+	jwt          *jwt.JWT
 }
 
 // NewAttendanceService creates a new attendance service
-func NewAttendanceService(repo *repository.AttendanceRepository, jwtToken *jwt.JWT) *AttendanceService {
+func NewAttendanceService(repo *repository.AttendanceRepository, locationRepo *locationRepo.LocationRepository, jwtToken *jwt.JWT) *AttendanceService {
 	return &AttendanceService{
-		repo: repo,
-		jwt:  jwtToken,
+		repo:         repo,
+		locationRepo: locationRepo,
+		jwt:          jwtToken,
 	}
 }
 
@@ -100,6 +103,7 @@ type ScanQRRequest struct {
 	QRData    string   `json:"qr_data" binding:"required"`
 	Latitude  *float64 `json:"latitude,omitempty"`
 	Longitude *float64 `json:"longitude,omitempty"`
+	SelfieURL *string  `json:"selfie_url,omitempty"` // Selfie photo URL (uploaded separately)
 }
 
 // ScanQRResponse represents QR scan response
@@ -128,6 +132,14 @@ func (s *AttendanceService) ScanQRCode(ctx context.Context, userID string, req S
 		return nil, apperrors.NewBadRequestError("QR code has expired")
 	}
 
+	// Validate location if provided (geofencing)
+	if req.Latitude != nil && req.Longitude != nil {
+		_, err := s.locationRepo.CheckLocationInGeofence(ctx, *req.Latitude, *req.Longitude)
+		if err != nil {
+			return nil, apperrors.NewBadRequestError("location not within allowed area")
+		}
+	}
+
 	// Check if attendance already exists
 	date := time.Now()
 	exists, err := s.repo.CheckAttendanceExists(ctx, userID, date, session.ScheduleID)
@@ -150,6 +162,7 @@ func (s *AttendanceService) ScanQRCode(ctx context.Context, userID string, req S
 		CheckInTime: &date,
 		Latitude:    req.Latitude,
 		Longitude:   req.Longitude,
+		SelfieURL:   req.SelfieURL,
 	}
 
 	if err := s.repo.CreateAttendance(ctx, attendance); err != nil {
@@ -617,7 +630,7 @@ func (s *AttendanceService) DeleteSchedule(ctx context.Context, scheduleID strin
 	return s.repo.DeleteSchedule(ctx, scheduleID)
 }
 
-// ========== Work Attendance (HRIS) Service Methods ==========
+// ========== Work Attendance (Kepegawaian) Service Methods ==========
 
 // CreateShiftPatternRequest represents create shift pattern request
 type CreateShiftPatternRequest struct {
@@ -916,12 +929,21 @@ type CheckInRequest struct {
 	Latitude       *float64 `json:"latitude,omitempty"`
 	Longitude      *float64 `json:"longitude,omitempty"`
 	IsViaUNSRIWiFi *bool    `json:"is_via_unsri_wifi,omitempty"`
+	SelfieURL      *string  `json:"selfie_url,omitempty"` // Selfie photo URL (uploaded separately)
 	Notes          string   `json:"notes,omitempty"`
 }
 
 // CheckIn performs check-in for work attendance
 func (s *AttendanceService) CheckIn(ctx context.Context, userID string, req CheckInRequest) (*models.WorkAttendanceRecord, error) {
 	now := time.Now()
+
+	// Validate location if provided (geofencing)
+	if req.Latitude != nil && req.Longitude != nil {
+		_, err := s.locationRepo.CheckLocationInGeofence(ctx, *req.Latitude, *req.Longitude)
+		if err != nil {
+			return nil, apperrors.NewBadRequestError("location not within allowed area")
+		}
+	}
 
 	// Check if already checked in today
 	existingRecord, err := s.repo.GetTodayWorkAttendanceRecord(ctx, userID, "CHECK_IN")
@@ -963,6 +985,7 @@ func (s *AttendanceService) CheckIn(ctx context.Context, userID string, req Chec
 		IsViaUNSRIWiFi: req.IsViaUNSRIWiFi,
 		Latitude:       req.Latitude,
 		Longitude:      req.Longitude,
+		SelfieURL:      req.SelfieURL,
 		Notes:          req.Notes,
 	}
 
@@ -979,6 +1002,7 @@ type CheckOutRequest struct {
 	Latitude       *float64 `json:"latitude,omitempty"`
 	Longitude      *float64 `json:"longitude,omitempty"`
 	IsViaUNSRIWiFi *bool    `json:"is_via_unsri_wifi,omitempty"`
+	SelfieURL      *string  `json:"selfie_url,omitempty"` // Selfie photo URL (uploaded separately)
 	Notes          string   `json:"notes,omitempty"`
 }
 
@@ -1033,6 +1057,7 @@ func (s *AttendanceService) CheckOut(ctx context.Context, userID string, req Che
 		IsViaUNSRIWiFi: req.IsViaUNSRIWiFi,
 		Latitude:       req.Latitude,
 		Longitude:      req.Longitude,
+		SelfieURL:      req.SelfieURL,
 		Notes:          req.Notes,
 	}
 

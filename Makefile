@@ -3,7 +3,6 @@
 # Build all services
 build:
 	@echo "Building all services..."
-	@go build -o bin/api-gateway ./cmd/api-gateway
 	@go build -o bin/auth-service ./cmd/auth-service
 	@go build -o bin/user-service ./cmd/user-service
 	@go build -o bin/attendance-service ./cmd/attendance-service
@@ -27,9 +26,6 @@ run-user-service:
 	@go run ./cmd/user-service
 
 # Run services locally
-run-api-gateway:
-	@go run ./cmd/api-gateway
-
 run-auth-service:
 	@go run ./cmd/auth-service
 
@@ -85,15 +81,14 @@ run-leave-service:
 	@go run ./cmd/leave-service
 
 swagger:
-	@swag init -g cmd/api-gateway/main.go
-	@echo "Swagger docs generated in docs/ folder"
+	@echo "Swagger docs generation removed - API Gateway no longer exists"
+	@echo "Swagger can be generated per-service if needed"
 
 # Run all services in background (requires multiple terminals)
 run-all:
 	@echo "Starting all services..."
 	@echo "Please run each service in separate terminals:"
-	@echo "  Terminal 1: make run-api-gateway"
-	@echo "  Terminal 2: make run-auth-service"
+	@echo "  Terminal 1: make run-auth-service"
 	@echo "  Terminal 3: make run-user-service"
 	@echo "  Terminal 4: make run-attendance-service"
 	@echo "  Terminal 5: make run-schedule-service"
@@ -154,12 +149,12 @@ docker-logs:
 # Docker Compose Build Partial (Build specific services only)
 # Usage examples:
 #   make docker-build-partial SERVICE=auth-service
-#   make docker-build-partial SERVICE="auth-service user-service api-gateway"
-#   make docker-build-partial SERVICE=api-gateway --no-cache
+#   make docker-build-partial SERVICE="auth-service user-service"
+#   make docker-build-partial SERVICE=auth-service --no-cache
 #
 # Available services:
 #   - Infrastructure: postgres, redis, rabbitmq
-#   - Core Services: auth-service, user-service, api-gateway
+#   - Core Services: auth-service, user-service
 #   - Academic Services: course-service, schedule-service, attendance-service, calendar-service
 #   - Communication: broadcast-service, notification-service
 #   - Location & Access: location-service, access-service, qr-service
@@ -170,7 +165,7 @@ docker-logs:
 #   make docker-build-partial SERVICE=auth-service
 #
 #   # Build multiple services at once
-#   make docker-build-partial SERVICE="auth-service user-service api-gateway"
+#   make docker-build-partial SERVICE="auth-service user-service"
 #
 #   # Build with no cache (force rebuild)
 #   make docker-build-partial SERVICE=auth-service --no-cache
@@ -179,7 +174,7 @@ docker-logs:
 #   make docker-build-partial SERVICE="postgres redis rabbitmq"
 #
 #   # Build core services only
-#   make docker-build-partial SERVICE="auth-service user-service api-gateway"
+#   make docker-build-partial SERVICE="auth-service user-service"
 docker-build-partial:
 	@if [ -z "$(SERVICE)" ]; then \
 		echo "Error: SERVICE parameter is required"; \

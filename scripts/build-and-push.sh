@@ -18,7 +18,6 @@ echo "🔑 Logging in to registry..."
 read -p "Press Enter after logging in (run: docker login $REGISTRY)..."
 
 SERVICES=(
-  "api-gateway"
   "auth-service"
   "user-service"
   "attendance-service"

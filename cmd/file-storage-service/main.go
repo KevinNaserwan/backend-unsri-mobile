@@ -16,6 +16,7 @@ import (
 	"unsri-backend/internal/shared/database"
 	"unsri-backend/internal/shared/logger"
 	"unsri-backend/internal/shared/models"
+	"unsri-backend/internal/shared/storage"
 	"unsri-backend/pkg/jwt"
 )
 
@@ -46,9 +47,38 @@ func main() {
 		log.Fatal("Failed to migrate database", err)
 	}
 
-	// Create storage directory
+	// Create storage directory (for local storage fallback)
 	if err := os.MkdirAll(cfg.Storage.BasePath, 0755); err != nil {
 		log.Fatal("Failed to create storage directory", err)
+	}
+
+	// Initialize MinIO client if storage type is minio
+	var minioClient *storage.MinIOClient
+	if cfg.Storage.Type == "minio" {
+		minioClient, err = storage.NewMinIOClient(storage.MinIOConfig{
+			Endpoint:        cfg.Storage.MinIO.Endpoint,
+			AccessKeyID:     cfg.Storage.MinIO.AccessKeyID,
+			SecretAccessKey: cfg.Storage.MinIO.SecretAccessKey,
+			UseSSL:          cfg.Storage.MinIO.UseSSL,
+			Region:          cfg.Storage.MinIO.Region,
+		})
+		if err != nil {
+			log.Fatal("Failed to initialize MinIO client", err)
+		}
+
+		// Create buckets if they don't exist
+		ctx := context.Background()
+		if err := minioClient.CreateBucketIfNotExists(ctx, cfg.Storage.MinIO.BucketProfiles); err != nil {
+			log.Fatal("Failed to create profiles bucket", err)
+		}
+		if err := minioClient.CreateBucketIfNotExists(ctx, cfg.Storage.MinIO.BucketSelfies); err != nil {
+			log.Fatal("Failed to create selfies bucket", err)
+		}
+		if err := minioClient.CreateBucketIfNotExists(ctx, cfg.Storage.MinIO.BucketDocuments); err != nil {
+			log.Fatal("Failed to create documents bucket", err)
+		}
+
+		log.Info("MinIO client initialized and buckets created")
 	}
 
 	jwtToken := jwt.NewJWT(
@@ -63,7 +93,17 @@ func main() {
 		BasePath: cfg.Storage.BasePath,
 		BaseURL:  cfg.Storage.BaseURL,
 		MaxSize:  cfg.Storage.MaxSize,
-	})
+		MinIO: service.MinIOStorageConfig{
+			Endpoint:        cfg.Storage.MinIO.Endpoint,
+			AccessKeyID:     cfg.Storage.MinIO.AccessKeyID,
+			SecretAccessKey: cfg.Storage.MinIO.SecretAccessKey,
+			UseSSL:          cfg.Storage.MinIO.UseSSL,
+			Region:          cfg.Storage.MinIO.Region,
+			BucketProfiles:  cfg.Storage.MinIO.BucketProfiles,
+			BucketSelfies:   cfg.Storage.MinIO.BucketSelfies,
+			BucketDocuments: cfg.Storage.MinIO.BucketDocuments,
+		},
+	}, minioClient)
 	fileHandler := handler.NewFileStorageHandler(fileService, log)
 
 	router := gin.Default()

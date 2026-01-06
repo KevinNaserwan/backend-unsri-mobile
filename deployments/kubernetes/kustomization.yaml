@@ -10,5 +10,4 @@ resources:
   - redis.yaml
   - auth-service.yaml
   - attendance-service.yaml
-  - api-gateway.yaml
 
