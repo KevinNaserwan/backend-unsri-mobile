@@ -57,7 +57,7 @@ func main() {
 
 	userRepo := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepo)
-	userHandler := handler.NewUserHandler(userService, log)
+	userHandler := handler.NewUserHandler(userService, log, cfg)
 
 	router := gin.Default()
 	router.Use(gin.Recovery())

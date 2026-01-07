@@ -35,12 +35,13 @@ type JWTConfig struct {
 
 // FileStorageConfig holds file storage configuration
 type FileStorageConfig struct {
-	Type     string // "local", "s3", "minio"
-	Endpoint string
-	Bucket   string
-	AccessKey string
-	SecretKey string
-	Region   string
+	Type        string // "local", "s3", "minio"
+	Endpoint    string
+	Bucket      string
+	AccessKey   string
+	SecretKey   string
+	Region      string
+	ServiceURL  string // URL to file storage service
 }
 
 // Load loads configuration from environment variables
@@ -57,6 +58,7 @@ func Load() *Config {
 	viper.SetDefault("FILE_STORAGE_TYPE", "local")
 	viper.SetDefault("FILE_STORAGE_ENDPOINT", "http://localhost:9000")
 	viper.SetDefault("FILE_STORAGE_BUCKET", "unsri-files")
+	viper.SetDefault("FILE_STORAGE_SERVICE_URL", "http://file-storage-service:8093")
 
 	viper.AutomaticEnv()
 
@@ -78,12 +80,13 @@ func Load() *Config {
 			SecretKey: viper.GetString("JWT_SECRET"),
 		},
 		FileStorage: FileStorageConfig{
-			Type:     viper.GetString("FILE_STORAGE_TYPE"),
-			Endpoint: viper.GetString("FILE_STORAGE_ENDPOINT"),
-			Bucket:   viper.GetString("FILE_STORAGE_BUCKET"),
-			AccessKey: viper.GetString("FILE_STORAGE_ACCESS_KEY"),
-			SecretKey: viper.GetString("FILE_STORAGE_SECRET_KEY"),
-			Region:   viper.GetString("FILE_STORAGE_REGION"),
+			Type:       viper.GetString("FILE_STORAGE_TYPE"),
+			Endpoint:   viper.GetString("FILE_STORAGE_ENDPOINT"),
+			Bucket:     viper.GetString("FILE_STORAGE_BUCKET"),
+			AccessKey:  viper.GetString("FILE_STORAGE_ACCESS_KEY"),
+			SecretKey:  viper.GetString("FILE_STORAGE_SECRET_KEY"),
+			Region:     viper.GetString("FILE_STORAGE_REGION"),
+			ServiceURL: viper.GetString("FILE_STORAGE_SERVICE_URL"),
 		},
 	}
 }

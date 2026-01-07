@@ -1480,7 +1480,7 @@
       "id": "d2fcc089-0bcd-491e-b8ec-4070dfb9c8ce"
     },
     {
-      "name": "6. Work Attendance (Kepegawaian) - Staff Only",
+      "name": "6. Work Attendance (Kepegawaian) - Staff Only - via API Gateway",
       "item": [
         {
           "name": "Check In",

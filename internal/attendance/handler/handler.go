@@ -2,12 +2,12 @@ package handler
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -69,7 +69,7 @@ func (h *AttendanceHandler) ScanQR(c *gin.Context) {
 	// Handle selfie file upload if present
 	if selfieFile, err := c.FormFile("selfie"); err == nil {
 		// Upload selfie to file storage service
-		selfieURL, uploadErr := h.uploadSelfieToStorage(c.Request.Context(), userID, selfieFile)
+		selfieURL, uploadErr := h.uploadSelfieToStorage(c, userID, selfieFile)
 		if uploadErr != nil {
 			utils.ErrorResponse(c, 0, uploadErr)
 			return
@@ -589,7 +589,7 @@ func (h *AttendanceHandler) CheckIn(c *gin.Context) {
 	// Handle selfie file upload if present
 	if selfieFile, err := c.FormFile("selfie"); err == nil {
 		// Upload selfie to file storage service
-		selfieURL, uploadErr := h.uploadSelfieToStorage(c.Request.Context(), userID, selfieFile)
+		selfieURL, uploadErr := h.uploadSelfieToStorage(c, userID, selfieFile)
 		if uploadErr != nil {
 			utils.ErrorResponse(c, 0, uploadErr)
 			return
@@ -628,7 +628,7 @@ func (h *AttendanceHandler) CheckOut(c *gin.Context) {
 	// Handle selfie file upload if present
 	if selfieFile, err := c.FormFile("selfie"); err == nil {
 		// Upload selfie to file storage service
-		selfieURL, uploadErr := h.uploadSelfieToStorage(c.Request.Context(), userID, selfieFile)
+		selfieURL, uploadErr := h.uploadSelfieToStorage(c, userID, selfieFile)
 		if uploadErr != nil {
 			utils.ErrorResponse(c, 0, uploadErr)
 			return
@@ -681,7 +681,7 @@ func (h *AttendanceHandler) GetWorkAttendanceRecords(c *gin.Context) {
 }
 
 // uploadSelfieToStorage uploads selfie to file storage service
-func (h *AttendanceHandler) uploadSelfieToStorage(ctx context.Context, userID string, file *multipart.FileHeader) (string, error) {
+func (h *AttendanceHandler) uploadSelfieToStorage(c *gin.Context, userID string, file *multipart.FileHeader) (string, error) {
 	// Open the uploaded file
 	src, err := file.Open()
 	if err != nil {
@@ -716,13 +716,20 @@ func (h *AttendanceHandler) uploadSelfieToStorage(ctx context.Context, userID st
 	writer.Close()
 
 	// Create HTTP request to file storage service
-	req, err := http.NewRequestWithContext(ctx, "POST", "http://localhost:8093/api/v1/files/upload", &buf)
+	fileStorageURL := os.Getenv("FILE_STORAGE_SERVICE_URL")
+	if fileStorageURL == "" {
+		fileStorageURL = "http://file-storage-service:8093"
+	}
+	req, err := http.NewRequestWithContext(c.Request.Context(), "POST", fileStorageURL+"/api/v1/files/upload", &buf)
 	if err != nil {
 		return "", apperrors.NewInternalError("failed to create upload request", err)
 	}
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set("User-ID", userID) // Pass user ID for authentication
+	// Get JWT token from current request context
+	if authHeader := c.GetHeader("Authorization"); authHeader != "" {
+		req.Header.Set("Authorization", authHeader)
+	}
 
 	// Send request
 	client := &http.Client{Timeout: 30 * time.Second}
