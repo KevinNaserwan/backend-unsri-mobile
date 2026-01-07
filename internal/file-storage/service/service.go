@@ -111,7 +111,9 @@ func (s *FileStorageService) UploadFile(ctx context.Context, userID string, req 
 		defer dst.Close()
 
 		// Reset reader position
-		src.Seek(0, 0)
+		if _, err := src.Seek(0, 0); err != nil {
+			return nil, apperrors.NewInternalError("failed to reset file reader position", err)
+		}
 
 		if _, err := io.Copy(dst, src); err != nil {
 			return nil, apperrors.NewInternalError("failed to save file", err)

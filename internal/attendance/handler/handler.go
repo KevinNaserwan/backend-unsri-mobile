@@ -713,7 +713,9 @@ func (h *AttendanceHandler) uploadSelfieToStorage(c *gin.Context, userID string,
 		return "", apperrors.NewInternalError("failed to write is_public field", err)
 	}
 
-	writer.Close()
+	if err := writer.Close(); err != nil {
+		return "", apperrors.NewInternalError("failed to close multipart writer", err)
+	}
 
 	// Create HTTP request to file storage service
 	fileStorageURL := os.Getenv("FILE_STORAGE_SERVICE_URL")

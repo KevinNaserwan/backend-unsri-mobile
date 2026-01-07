@@ -315,7 +315,9 @@ func (h *UserHandler) uploadPhotoToStorage(c *gin.Context, userID string, file *
 		return "", apperrors.NewInternalError("failed to write is_public field", err)
 	}
 
-	writer.Close()
+	if err := writer.Close(); err != nil {
+		return "", apperrors.NewInternalError("failed to close multipart writer", err)
+	}
 
 	// Create HTTP request to file storage service
 	req, err := http.NewRequestWithContext(c.Request.Context(), "POST", h.config.FileStorage.ServiceURL+"/api/v1/files/upload", &buf)
