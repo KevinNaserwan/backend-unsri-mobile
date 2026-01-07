@@ -2,12 +2,12 @@ name: CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     tags:
-      - 'v*'
+      - "v*"
 
 env:
-  GO_VERSION: '1.24'
+  GO_VERSION: "1.24"
 
 permissions:
   contents: read
@@ -38,12 +38,12 @@ jobs:
         run: |
           echo "OWNER_LC=${OWNER,,}" >>${GITHUB_ENV}
         env:
-          OWNER: '${{ github.repository_owner }}'
+          OWNER: "${{ github.repository_owner }}"
 
       - name: Build and push Docker images
         run: |
           SERVICES=(
-            "api-gateway"
+            "api-gateway-service"
             "auth-service"
             "user-service"
             "attendance-service"
@@ -62,7 +62,7 @@ jobs:
             "master-data-service"
             "leave-service"
           )
-          
+
           for service in "${SERVICES[@]}"; do
             docker build \
               -f deployments/docker/Dockerfile.$service \
@@ -111,7 +111,7 @@ jobs:
         run: |
           echo "OWNER_LC=${OWNER,,}" >>${GITHUB_ENV}
         env:
-          OWNER: '${{ github.repository_owner }}'
+          OWNER: "${{ github.repository_owner }}"
 
       - name: Extract version tag
         id: tag
@@ -121,7 +121,7 @@ jobs:
         run: |
           VERSION=${{ steps.tag.outputs.VERSION }}
           SERVICES=(
-            "api-gateway"
+            "api-gateway-service"
             "auth-service"
             "user-service"
             "attendance-service"
@@ -140,7 +140,7 @@ jobs:
             "master-data-service"
             "leave-service"
           )
-          
+
           for service in "${SERVICES[@]}"; do
             docker build \
               -f deployments/docker/Dockerfile.$service \
@@ -175,10 +175,10 @@ jobs:
           release_name: Release ${{ steps.tag.outputs.VERSION }}
           body: |
             Production release ${{ steps.tag.outputs.VERSION }}
-            
+
             ## Changes
             - See commit history for details
-            
+
             ## Docker Images
             All services tagged with version ${{ steps.tag.outputs.VERSION }}
           draft: false

@@ -2,7 +2,6 @@ package handler
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,10 +9,11 @@ import (
 	"net/http"
 	"time"
 
+	apperrors "unsri-backend/internal/shared/errors"
 	"unsri-backend/internal/shared/logger"
 	"unsri-backend/internal/shared/utils"
+	"unsri-backend/internal/user/config"
 	"unsri-backend/internal/user/service"
-	apperrors "unsri-backend/internal/shared/errors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,13 +22,15 @@ import (
 type UserHandler struct {
 	service *service.UserService
 	logger  logger.Logger
+	config  *config.Config
 }
 
 // NewUserHandler creates a new user handler
-func NewUserHandler(service *service.UserService, logger logger.Logger) *UserHandler {
+func NewUserHandler(service *service.UserService, logger logger.Logger, config *config.Config) *UserHandler {
 	return &UserHandler{
 		service: service,
 		logger:  logger,
+		config:  config,
 	}
 }
 
@@ -157,7 +159,7 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 	}
 
 	// Upload file to file storage service
-	photoURL, err := h.uploadPhotoToStorage(c.Request.Context(), userID, file)
+	photoURL, err := h.uploadPhotoToStorage(c, userID, file)
 	if err != nil {
 		utils.ErrorResponse(c, 0, err)
 		return
@@ -281,7 +283,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 }
 
 // uploadPhotoToStorage uploads photo to file storage service
-func (h *UserHandler) uploadPhotoToStorage(ctx context.Context, userID string, file *multipart.FileHeader) (string, error) {
+func (h *UserHandler) uploadPhotoToStorage(c *gin.Context, userID string, file *multipart.FileHeader) (string, error) {
 	// Open the uploaded file
 	src, err := file.Open()
 	if err != nil {
@@ -298,7 +300,7 @@ func (h *UserHandler) uploadPhotoToStorage(ctx context.Context, userID string, f
 	if err != nil {
 		return "", apperrors.NewInternalError("failed to create form file", err)
 	}
-	
+
 	if _, err := io.Copy(part, src); err != nil {
 		return "", apperrors.NewInternalError("failed to copy file data", err)
 	}
@@ -313,16 +315,21 @@ func (h *UserHandler) uploadPhotoToStorage(ctx context.Context, userID string, f
 		return "", apperrors.NewInternalError("failed to write is_public field", err)
 	}
 
-	writer.Close()
+	if err := writer.Close(); err != nil {
+		return "", apperrors.NewInternalError("failed to close multipart writer", err)
+	}
 
 	// Create HTTP request to file storage service
-	req, err := http.NewRequestWithContext(ctx, "POST", "http://localhost:8093/api/v1/files/upload", &buf)
+	req, err := http.NewRequestWithContext(c.Request.Context(), "POST", h.config.FileStorage.ServiceURL+"/api/v1/files/upload", &buf)
 	if err != nil {
 		return "", apperrors.NewInternalError("failed to create upload request", err)
 	}
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set("User-ID", userID) // Pass user ID for authentication
+	// Get JWT token from current request context
+	if authHeader := c.GetHeader("Authorization"); authHeader != "" {
+		req.Header.Set("Authorization", authHeader)
+	}
 
 	// Send request
 	client := &http.Client{Timeout: 30 * time.Second}
