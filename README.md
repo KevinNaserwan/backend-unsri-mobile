@@ -165,7 +165,7 @@ Setelah service berjalan, akses Swagger UI di:
 http://localhost:8080/swagger/index.html
 ```
 
-Note: API Gateway telah diganti dengan Nginx reverse proxy. Swagger dapat di-generate per-service jika diperlukan.
+Note: Sistem menggunakan custom API Gateway service (Go) untuk routing dan load balancing. Swagger dapat di-generate per-service jika diperlukan.
 
 ### Postman Collection
 
@@ -347,10 +347,11 @@ docker-compose -f deployments/docker-compose/docker-compose.yml up -d
 docker-compose -f deployments/docker-compose/docker-compose.yml logs -f
 ```
 
-**Setup dengan Reverse Proxy (Nginx/Caddy):**
+**Setup dengan Load Balancer (untuk production):**
 
 ```bash
-# Setup Nginx atau Caddy untuk HTTPS dan domain
+# Setup external load balancer untuk HTTPS dan domain
+# API Gateway sudah handle internal routing
 # Lihat docs/DEPLOYMENT.md untuk detail
 ```
 

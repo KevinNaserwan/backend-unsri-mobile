@@ -596,7 +596,11 @@ func (r *AttendanceRepository) GetWorkAttendanceRecordsByUserID(ctx context.Cont
 	var records []models.WorkAttendanceRecord
 	var total int64
 
-	query := r.db.WithContext(ctx).Model(&models.WorkAttendanceRecord{}).Where("user_id = ?", userID)
+	query := r.db.WithContext(ctx).Model(&models.WorkAttendanceRecord{})
+	
+	if userID != "" {
+		query = query.Where("user_id = ?", userID)
+	}
 
 	if startDate != nil {
 		query = query.Where("DATE(recorded_at) >= ?", startDate)
