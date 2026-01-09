@@ -84,6 +84,20 @@ func (r *QRRepository) GetUserAccessQR(ctx context.Context, userID string) (*mod
 	return &userQR, nil
 }
 
+func (r *QRRepository) GetLatestUserAccessQRByUserID(ctx context.Context, userID string) (*models.UserAccessQR, error) {
+	var userQR models.UserAccessQR
+	if err := r.db.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Order("created_at DESC").
+		First(&userQR).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user access QR not found")
+		}
+		return nil, err
+	}
+	return &userQR, nil
+}
+
 // CreateUserAccessQR creates a user access QR
 func (r *QRRepository) CreateUserAccessQR(ctx context.Context, userQR *models.UserAccessQR) error {
 	return r.db.WithContext(ctx).Create(userQR).Error

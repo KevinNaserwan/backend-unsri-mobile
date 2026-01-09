@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"unsri-backend/internal/qr/service"
+	"unsri-backend/internal/shared/errors"
 	"unsri-backend/internal/shared/logger"
 	"unsri-backend/internal/shared/utils"
 
@@ -95,6 +96,25 @@ func (h *QRHandler) GenerateClassQR(c *gin.Context) {
 // GenerateAccessQR handles generate access QR request (gate access - unique per user)
 func (h *QRHandler) GenerateAccessQR(c *gin.Context) {
 	userID := c.GetString("user_id")
+
+	result, err := h.service.GenerateAccessQR(c.Request.Context(), userID)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, result)
+}
+
+func (h *QRHandler) GenerateAccessQRForUser(c *gin.Context) {
+	userID := c.Param("userId")
+	requesterID := c.GetString("user_id")
+	requesterRole := c.GetString("user_role")
+
+	if requesterRole != "staff" && userID != requesterID {
+		utils.ErrorResponse(c, http.StatusForbidden, errors.NewForbiddenError("insufficient permissions"))
+		return
+	}
 
 	result, err := h.service.GenerateAccessQR(c.Request.Context(), userID)
 	if err != nil {

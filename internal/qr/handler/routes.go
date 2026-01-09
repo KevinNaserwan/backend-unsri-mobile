@@ -34,6 +34,7 @@ func SetupRoutes(router *gin.Engine, handler *QRHandler, jwtToken *jwt.JWT) {
 
 		// Gate access QR (unique session_id per generation)
 		v1.GET("/access/generate", handler.GenerateAccessQR)
+		v1.GET("/access/generate/:userId", handler.GenerateAccessQRForUser)
 		v1.GET("/access/validate/:session_id", handler.ValidateAccessQR)
 	}
 }
