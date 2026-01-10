@@ -38,10 +38,10 @@ func (r *LocationRepository) GetGeofenceByID(ctx context.Context, id string) (*m
 	return &geofence, nil
 }
 
-// GetAllGeofences gets all active geofences
+// GetAllGeofences gets all geofences
 func (r *LocationRepository) GetAllGeofences(ctx context.Context) ([]models.Geofence, error) {
 	var geofences []models.Geofence
-	if err := r.db.WithContext(ctx).Where("is_active = ?", true).Find(&geofences).Error; err != nil {
+	if err := r.db.WithContext(ctx).Find(&geofences).Error; err != nil {
 		return nil, err
 	}
 	return geofences, nil

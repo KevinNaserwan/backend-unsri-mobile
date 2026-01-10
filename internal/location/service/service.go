@@ -145,6 +145,16 @@ type CreateGeofenceRequest struct {
 	Radius      float64 `json:"radius" binding:"required"` // in meters
 }
 
+// UpdateGeofenceRequest represents update geofence request
+type UpdateGeofenceRequest struct {
+	Name        string  `json:"name" binding:"required"`
+	Description string  `json:"description,omitempty"`
+	Latitude    float64 `json:"latitude" binding:"required"`
+	Longitude   float64 `json:"longitude" binding:"required"`
+	Radius      float64 `json:"radius" binding:"required"` // in meters
+	IsActive    *bool   `json:"is_active,omitempty"`
+}
+
 // CreateGeofence creates a new geofence
 func (s *LocationService) CreateGeofence(ctx context.Context, req CreateGeofenceRequest) (*models.Geofence, error) {
 	geofence := &models.Geofence{
@@ -163,3 +173,57 @@ func (s *LocationService) CreateGeofence(ctx context.Context, req CreateGeofence
 	return geofence, nil
 }
 
+// GetGeofence gets a geofence by ID
+func (s *LocationService) GetGeofence(ctx context.Context, id string) (*models.Geofence, error) {
+	geofence, err := s.repo.GetGeofenceByID(ctx, id)
+	if err != nil {
+		if err.Error() == "geofence not found" {
+			return nil, apperrors.NewNotFoundError("geofence", id)
+		}
+		return nil, apperrors.NewInternalError("failed to get geofence", err)
+	}
+	return geofence, nil
+}
+
+// UpdateGeofence updates a geofence
+func (s *LocationService) UpdateGeofence(ctx context.Context, id string, req UpdateGeofenceRequest) (*models.Geofence, error) {
+	geofence, err := s.repo.GetGeofenceByID(ctx, id)
+	if err != nil {
+		if err.Error() == "geofence not found" {
+			return nil, apperrors.NewNotFoundError("geofence", id)
+		}
+		return nil, apperrors.NewInternalError("failed to get geofence", err)
+	}
+
+	geofence.Name = req.Name
+	geofence.Description = req.Description
+	geofence.Latitude = req.Latitude
+	geofence.Longitude = req.Longitude
+	geofence.Radius = req.Radius
+	if req.IsActive != nil {
+		geofence.IsActive = *req.IsActive
+	}
+
+	if err := s.repo.UpdateGeofence(ctx, geofence); err != nil {
+		return nil, apperrors.NewInternalError("failed to update geofence", err)
+	}
+
+	return geofence, nil
+}
+
+// DeleteGeofence deletes a geofence
+func (s *LocationService) DeleteGeofence(ctx context.Context, id string) error {
+	_, err := s.repo.GetGeofenceByID(ctx, id)
+	if err != nil {
+		if err.Error() == "geofence not found" {
+			return apperrors.NewNotFoundError("geofence", id)
+		}
+		return apperrors.NewInternalError("failed to get geofence", err)
+	}
+
+	if err := s.repo.DeleteGeofence(ctx, id); err != nil {
+		return apperrors.NewInternalError("failed to delete geofence", err)
+	}
+
+	return nil
+}

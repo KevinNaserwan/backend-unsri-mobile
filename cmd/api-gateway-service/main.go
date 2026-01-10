@@ -8,12 +8,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"unsri-backend/internal/gateway/config"
 	"unsri-backend/internal/gateway/handler"
 	"unsri-backend/internal/gateway/middleware"
 	"unsri-backend/internal/gateway/service"
 	"unsri-backend/internal/shared/logger"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -32,7 +33,7 @@ func main() {
 
 	// Setup router
 	router := gin.New()
-	
+
 	// Add middleware
 	router.Use(gin.Recovery())
 	router.Use(middleware.CORS(cfg.CORS))
@@ -71,6 +72,7 @@ func main() {
 	log.Info("  /api/v1/notifications/*      -> notification-service:8087")
 	log.Info("  /api/v1/calendar/*           -> calendar-service:8088")
 	log.Info("  /api/v1/courses/*            -> course-service:8089")
+	log.Info("  /api/v1/location/*           -> location-service:8090")
 	log.Info("  /api/v1/locations/*          -> location-service:8090")
 	log.Info("  /api/v1/access/*             -> access-service:8091")
 	log.Info("  /api/v1/quick-actions/*      -> quick-actions-service:8092")

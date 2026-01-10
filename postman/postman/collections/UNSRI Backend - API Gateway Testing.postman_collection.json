@@ -1351,6 +1351,242 @@
           }
         }
       ]
+    },
+    {
+      "name": "8. Location Service (Geofences)",
+      "item": [
+        {
+          "name": "Location Service Health (via Gateway)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Location service is healthy\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.service).to.eql('location-service');",
+                  "    pm.expect(jsonData.status).to.eql('ok');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/location/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "location", "health"]
+            }
+          }
+        },
+        {
+          "name": "Get Geofences",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Geofences list present\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success');",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/location/geofences",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "location", "geofences"]
+            }
+          }
+        },
+        {
+          "name": "Create Geofence",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Geofence created\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success');",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "});",
+                  "",
+                  "pm.test(\"Set geofence_id\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('geofence_id', jsonData.data.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"UNSRI Test Geofence\",\n  \"description\": \"Geofence untuk testing via Postman\",\n  \"latitude\": -2.9914,\n  \"longitude\": 104.7565,\n  \"radius\": 100\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/location/geofences",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "location", "geofences"]
+            }
+          }
+        },
+        {
+          "name": "Get Geofence By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Geofence data present\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success');",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('id');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/location/geofences/{{geofence_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "location", "geofences", "{{geofence_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Geofence",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Geofence updated\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success');",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"UNSRI Test Geofence (Updated)\",\n  \"description\": \"Update geofence via Postman\",\n  \"latitude\": -2.9914,\n  \"longitude\": 104.7565,\n  \"radius\": 150,\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/location/geofences/{{geofence_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "location", "geofences", "{{geofence_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Geofence",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Geofence deleted\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('success');",
+                  "    pm.expect(jsonData.success).to.be.true;",
+                  "    pm.expect(jsonData.data).to.have.property('message');",
+                  "    pm.expect(jsonData.data.message).to.eql('geofence deleted');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/location/geofences/{{geofence_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "location", "geofences", "{{geofence_id}}"]
+            }
+          }
+        }
+      ]
     }
   ],
   "event": [

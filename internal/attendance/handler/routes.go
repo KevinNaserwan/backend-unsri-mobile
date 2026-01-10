@@ -53,9 +53,9 @@ func SetupRoutes(router *gin.Engine, handler *AttendanceHandler, jwtToken *jwt.J
 	workAttendance.Use(middleware.AuthMiddleware(jwtToken))
 	{
 		// Check-in/out
-		workAttendance.POST("/check-in", handler.CheckIn)
-		workAttendance.POST("/check-out", handler.CheckOut)
-		workAttendance.GET("/records", handler.GetWorkAttendanceRecords)
+		workAttendance.POST("/check-in", middleware.RoleMiddleware("admin", "dosen", "staff"), handler.CheckIn)
+		workAttendance.POST("/check-out", middleware.RoleMiddleware("admin", "dosen", "staff"), handler.CheckOut)
+		workAttendance.GET("/records", middleware.RoleMiddleware("admin", "dosen", "staff"), handler.GetWorkAttendanceRecords)
 
 		// Shift patterns (admin only)
 		shifts := workAttendance.Group("/shifts")
@@ -85,4 +85,3 @@ func SetupRoutes(router *gin.Engine, handler *AttendanceHandler, jwtToken *jwt.J
 		}
 	}
 }
-
