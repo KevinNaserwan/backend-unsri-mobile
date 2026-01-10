@@ -761,3 +761,53 @@ func (h *AttendanceHandler) uploadSelfieToStorage(c *gin.Context, userID string,
 
 	return uploadResp.Data.URL, nil
 }
+
+// GetWorkAttendanceStatistics handles getting work attendance statistics
+func (h *AttendanceHandler) GetWorkAttendanceStatistics(c *gin.Context) {
+	userID := c.Query("user_id")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+
+	var pUserID *string
+	if userID != "" {
+		pUserID = &userID
+	}
+
+	var pStartDate, pEndDate *string
+	if startDate != "" {
+		pStartDate = &startDate
+	}
+	if endDate != "" {
+		pEndDate = &endDate
+	}
+
+	stats, err := h.service.GetWorkAttendanceStatistics(c.Request.Context(), pUserID, pStartDate, pEndDate)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, stats)
+}
+
+// GetWorkAttendanceSummaries handles getting work attendance summaries
+func (h *AttendanceHandler) GetWorkAttendanceSummaries(c *gin.Context) {
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+
+	var pStartDate, pEndDate *string
+	if startDate != "" {
+		pStartDate = &startDate
+	}
+	if endDate != "" {
+		pEndDate = &endDate
+	}
+
+	summaries, err := h.service.GetWorkAttendanceSummaries(c.Request.Context(), pStartDate, pEndDate)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, summaries)
+}

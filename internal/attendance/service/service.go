@@ -322,6 +322,44 @@ func (s *AttendanceService) GetAttendanceStatistics(ctx context.Context, userID 
 	return s.repo.GetAttendanceStatistics(ctx, userID, start, end)
 }
 
+// GetWorkAttendanceStatistics gets work attendance statistics
+func (s *AttendanceService) GetWorkAttendanceStatistics(ctx context.Context, userID *string, startDate, endDate *string) (map[string]interface{}, error) {
+	var start, end *time.Time
+
+	if startDate != nil {
+		if t, err := time.Parse("2006-01-02", *startDate); err == nil {
+			start = &t
+		}
+	}
+
+	if endDate != nil {
+		if t, err := time.Parse("2006-01-02", *endDate); err == nil {
+			end = &t
+		}
+	}
+
+	return s.repo.GetWorkAttendanceStatistics(ctx, userID, start, end)
+}
+
+// GetWorkAttendanceSummaries gets work attendance summaries grouped by user
+func (s *AttendanceService) GetWorkAttendanceSummaries(ctx context.Context, startDate, endDate *string) ([]map[string]interface{}, error) {
+	var start, end *time.Time
+
+	if startDate != nil {
+		if t, err := time.Parse("2006-01-02", *startDate); err == nil {
+			start = &t
+		}
+	}
+
+	if endDate != nil {
+		if t, err := time.Parse("2006-01-02", *endDate); err == nil {
+			end = &t
+		}
+	}
+
+	return s.repo.GetWorkAttendanceSummaries(ctx, start, end)
+}
+
 // GetAttendanceByCourse gets attendances by course
 func (s *AttendanceService) GetAttendanceByCourse(ctx context.Context, courseID string, startDate, endDate *string) ([]models.Attendance, error) {
 	var start, end *time.Time

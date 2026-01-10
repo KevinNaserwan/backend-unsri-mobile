@@ -5,8 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"gorm.io/gorm"
 	"unsri-backend/internal/shared/models"
+
+	"gorm.io/gorm"
 )
 
 // AttendanceRepository handles attendance data operations
@@ -202,9 +203,9 @@ func (r *AttendanceRepository) GetAttendancesByStudentID(ctx context.Context, st
 // GetAttendanceStatistics gets attendance statistics for a user
 func (r *AttendanceRepository) GetAttendanceStatistics(ctx context.Context, userID string, startDate, endDate *time.Time) (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
-	
+
 	query := r.db.WithContext(ctx).Model(&models.Attendance{}).Where("user_id = ?", userID)
-	
+
 	if startDate != nil {
 		query = query.Where("date >= ?", startDate)
 	}
@@ -268,13 +269,13 @@ func (r *AttendanceRepository) GetAttendanceStatistics(ctx context.Context, user
 func (r *AttendanceRepository) GetTodaySchedules(ctx context.Context, userID string, role string) ([]models.Schedule, error) {
 	today := time.Now()
 	var schedules []models.Schedule
-	
+
 	query := r.db.WithContext(ctx).Where("date = ? AND is_active = ?", today.Format("2006-01-02"), true)
-	
+
 	if role == "dosen" {
 		query = query.Where("dosen_id = ?", userID)
 	}
-	
+
 	if err := query.Order("start_time ASC").Find(&schedules).Error; err != nil {
 		return nil, err
 	}
@@ -285,17 +286,17 @@ func (r *AttendanceRepository) GetTodaySchedules(ctx context.Context, userID str
 func (r *AttendanceRepository) GetUpcomingSchedules(ctx context.Context, userID string, role string, limit int) ([]models.Schedule, error) {
 	today := time.Now()
 	var schedules []models.Schedule
-	
+
 	query := r.db.WithContext(ctx).Where("date >= ? AND is_active = ?", today.Format("2006-01-02"), true)
-	
+
 	if role == "dosen" {
 		query = query.Where("dosen_id = ?", userID)
 	}
-	
+
 	if limit > 0 {
 		query = query.Limit(limit)
 	}
-	
+
 	if err := query.Order("date ASC, start_time ASC").Find(&schedules).Error; err != nil {
 		return nil, err
 	}
@@ -306,9 +307,9 @@ func (r *AttendanceRepository) GetUpcomingSchedules(ctx context.Context, userID 
 func (r *AttendanceRepository) GetCurrentTapInStatus(ctx context.Context, userID string) (*models.Attendance, error) {
 	today := time.Now().Format("2006-01-02")
 	var attendance models.Attendance
-	
+
 	if err := r.db.WithContext(ctx).
-		Where("user_id = ? AND date = ? AND type = ? AND check_in_time IS NOT NULL AND check_out_time IS NULL", 
+		Where("user_id = ? AND date = ? AND type = ? AND check_in_time IS NOT NULL AND check_out_time IS NULL",
 			userID, today, models.AttendanceTypeKampus).
 		Order("check_in_time DESC").
 		First(&attendance).Error; err != nil {
@@ -317,7 +318,7 @@ func (r *AttendanceRepository) GetCurrentTapInStatus(ctx context.Context, userID
 		}
 		return nil, err
 	}
-	
+
 	return &attendance, nil
 }
 
@@ -325,28 +326,28 @@ func (r *AttendanceRepository) GetCurrentTapInStatus(ctx context.Context, userID
 func (r *AttendanceRepository) GetAllSchedules(ctx context.Context, dosenID *string, startDate, endDate *time.Time, limit, offset int) ([]models.Schedule, int64, error) {
 	var schedules []models.Schedule
 	var total int64
-	
+
 	query := r.db.WithContext(ctx).Model(&models.Schedule{}).Where("is_active = ?", true)
-	
+
 	if dosenID != nil {
 		query = query.Where("dosen_id = ?", *dosenID)
 	}
-	
+
 	if startDate != nil {
 		query = query.Where("date >= ?", startDate)
 	}
 	if endDate != nil {
 		query = query.Where("date <= ?", endDate)
 	}
-	
+
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	
+
 	if err := query.Order("date ASC, start_time ASC").Limit(limit).Offset(offset).Find(&schedules).Error; err != nil {
 		return nil, 0, err
 	}
-	
+
 	return schedules, total, nil
 }
 
@@ -597,7 +598,7 @@ func (r *AttendanceRepository) GetWorkAttendanceRecordsByUserID(ctx context.Cont
 	var total int64
 
 	query := r.db.WithContext(ctx).Model(&models.WorkAttendanceRecord{})
-	
+
 	if userID != "" {
 		query = query.Where("user_id = ?", userID)
 	}
@@ -655,3 +656,116 @@ func (r *AttendanceRepository) UpdateWorkAttendanceRecord(ctx context.Context, r
 	return r.db.WithContext(ctx).Save(record).Error
 }
 
+// GetWorkAttendanceStatistics gets work attendance statistics
+func (r *AttendanceRepository) GetWorkAttendanceStatistics(ctx context.Context, userID *string, startDate, endDate *time.Time) (map[string]interface{}, error) {
+	var stats []struct {
+		Status string
+		Count  int
+	}
+
+	query := r.db.WithContext(ctx).Model(&models.WorkAttendanceRecord{}).
+		Select("status, count(*) as count").
+		Where("attendance_type = ?", "CHECK_IN")
+
+	if userID != nil {
+		query = query.Where("user_id = ?", *userID)
+	}
+	if startDate != nil {
+		query = query.Where("DATE(recorded_at) >= ?", startDate)
+	}
+	if endDate != nil {
+		query = query.Where("DATE(recorded_at) <= ?", endDate)
+	}
+
+	if err := query.Group("status").Scan(&stats).Error; err != nil {
+		return nil, err
+	}
+
+	result := map[string]interface{}{
+		"total_present": 0,
+		"total_late":    0,
+		"on_time":       0,
+	}
+
+	totalPresent := 0
+	for _, s := range stats {
+		count := s.Count
+		totalPresent += count
+		if s.Status == "LATE_IN" {
+			result["total_late"] = count
+		} else if s.Status == "CHECK_IN" {
+			result["on_time"] = count
+		}
+	}
+	result["total_present"] = totalPresent
+
+	return result, nil
+}
+
+// GetWorkAttendanceSummaries gets work attendance summaries grouped by user
+func (r *AttendanceRepository) GetWorkAttendanceSummaries(ctx context.Context, startDate, endDate *time.Time) ([]map[string]interface{}, error) {
+	var rawResults []struct {
+		UserID       string
+		UserName     string
+		NIP          string
+		TotalPresent int
+		OnTime       int
+		TotalLate    int
+	}
+
+	query := r.db.WithContext(ctx).Table("users").
+		Select("users.id as user_id, users.name as user_name, users.nip, " +
+			"COUNT(CASE WHEN work_attendance_records.attendance_type = 'CHECK_IN' THEN 1 END) as total_present, " +
+			"COUNT(CASE WHEN work_attendance_records.attendance_type = 'CHECK_IN' AND work_attendance_records.status = 'CHECK_IN' THEN 1 END) as on_time, " +
+			"COUNT(CASE WHEN work_attendance_records.attendance_type = 'CHECK_IN' AND work_attendance_records.status = 'LATE_IN' THEN 1 END) as total_late").
+		Joins("LEFT JOIN work_attendance_records ON users.id = work_attendance_records.user_id")
+
+	if startDate != nil {
+		query = query.Where("work_attendance_records.recorded_at IS NULL OR DATE(work_attendance_records.recorded_at) >= ?", startDate)
+	}
+	if endDate != nil {
+		query = query.Where("work_attendance_records.recorded_at IS NULL OR DATE(work_attendance_records.recorded_at) <= ?", endDate)
+	}
+
+	// We need to be careful with WHERE on LEFT JOIN.
+	// If we want all users, we should put conditions in JOIN, but Gorm Joins doesn't easily support parameterized ON.
+	// Alternative: Filter only if record exists.
+	// Actually, if we filter by Date, we usually want to see stats for that period.
+	// Let's simplify: ONLY return users with records in that period for now.
+	// To do that, change LEFT JOIN to JOIN, or keep Where as is (which filters out NULLs unless we handle them).
+	// If I remove IS NULL check, it becomes Inner Join behavior.
+	// Let's stick to Inner Join behavior (Only show users with attendance) for simplicity and correctness of stats.
+
+	// Reset query for simpler approach: Start from WorkAttendanceRecord
+	query = r.db.WithContext(ctx).Table("work_attendance_records").
+		Select("work_attendance_records.user_id, users.name as user_name, users.nip, " +
+			"COUNT(CASE WHEN work_attendance_records.attendance_type = 'CHECK_IN' THEN 1 END) as total_present, " +
+			"COUNT(CASE WHEN work_attendance_records.attendance_type = 'CHECK_IN' AND work_attendance_records.status = 'CHECK_IN' THEN 1 END) as on_time, " +
+			"COUNT(CASE WHEN work_attendance_records.attendance_type = 'CHECK_IN' AND work_attendance_records.status = 'LATE_IN' THEN 1 END) as total_late").
+		Joins("JOIN users ON users.id = work_attendance_records.user_id")
+
+	if startDate != nil {
+		query = query.Where("DATE(work_attendance_records.recorded_at) >= ?", startDate)
+	}
+	if endDate != nil {
+		query = query.Where("DATE(work_attendance_records.recorded_at) <= ?", endDate)
+	}
+
+	if err := query.Group("work_attendance_records.user_id, users.name, users.nip").Scan(&rawResults).Error; err != nil {
+		return nil, err
+	}
+
+	results := make([]map[string]interface{}, len(rawResults))
+	for i, res := range rawResults {
+		results[i] = map[string]interface{}{
+			"user_id":       res.UserID,
+			"user_name":     res.UserName,
+			"nip":           res.NIP,
+			"total_present": res.TotalPresent,
+			"on_time":       res.OnTime,
+			"total_late":    res.TotalLate,
+		}
+	}
+
+	return results, nil
+}

@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"unsri-backend/internal/attendance/middleware"
 	"unsri-backend/pkg/jwt"
+
+	"github.com/gin-gonic/gin"
 )
 
 // SetupRoutes sets up all routes for attendance service
@@ -56,6 +57,8 @@ func SetupRoutes(router *gin.Engine, handler *AttendanceHandler, jwtToken *jwt.J
 		workAttendance.POST("/check-in", middleware.RoleMiddleware("admin", "dosen", "staff"), handler.CheckIn)
 		workAttendance.POST("/check-out", middleware.RoleMiddleware("admin", "dosen", "staff"), handler.CheckOut)
 		workAttendance.GET("/records", middleware.RoleMiddleware("admin", "dosen", "staff"), handler.GetWorkAttendanceRecords)
+		workAttendance.GET("/statistics", middleware.RoleMiddleware("admin", "dosen", "staff"), handler.GetWorkAttendanceStatistics)
+		workAttendance.GET("/summaries", middleware.RoleMiddleware("admin", "dosen", "staff"), handler.GetWorkAttendanceSummaries)
 
 		// Shift patterns (admin only)
 		shifts := workAttendance.Group("/shifts")
