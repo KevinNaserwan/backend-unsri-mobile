@@ -713,31 +713,7 @@ func (r *AttendanceRepository) GetWorkAttendanceSummaries(ctx context.Context, s
 		TotalLate    int
 	}
 
-	query := r.db.WithContext(ctx).Table("users").
-		Select("users.id as user_id, users.name as user_name, users.nip, " +
-			"COUNT(CASE WHEN work_attendance_records.attendance_type = 'CHECK_IN' THEN 1 END) as total_present, " +
-			"COUNT(CASE WHEN work_attendance_records.attendance_type = 'CHECK_IN' AND work_attendance_records.status = 'CHECK_IN' THEN 1 END) as on_time, " +
-			"COUNT(CASE WHEN work_attendance_records.attendance_type = 'CHECK_IN' AND work_attendance_records.status = 'LATE_IN' THEN 1 END) as total_late").
-		Joins("LEFT JOIN work_attendance_records ON users.id = work_attendance_records.user_id")
-
-	if startDate != nil {
-		query = query.Where("work_attendance_records.recorded_at IS NULL OR DATE(work_attendance_records.recorded_at) >= ?", startDate)
-	}
-	if endDate != nil {
-		query = query.Where("work_attendance_records.recorded_at IS NULL OR DATE(work_attendance_records.recorded_at) <= ?", endDate)
-	}
-
-	// We need to be careful with WHERE on LEFT JOIN.
-	// If we want all users, we should put conditions in JOIN, but Gorm Joins doesn't easily support parameterized ON.
-	// Alternative: Filter only if record exists.
-	// Actually, if we filter by Date, we usually want to see stats for that period.
-	// Let's simplify: ONLY return users with records in that period for now.
-	// To do that, change LEFT JOIN to JOIN, or keep Where as is (which filters out NULLs unless we handle them).
-	// If I remove IS NULL check, it becomes Inner Join behavior.
-	// Let's stick to Inner Join behavior (Only show users with attendance) for simplicity and correctness of stats.
-
-	// Reset query for simpler approach: Start from WorkAttendanceRecord
-	query = r.db.WithContext(ctx).Table("work_attendance_records").
+	query := r.db.WithContext(ctx).Table("work_attendance_records").
 		Select("work_attendance_records.user_id, users.name as user_name, users.nip, " +
 			"COUNT(CASE WHEN work_attendance_records.attendance_type = 'CHECK_IN' THEN 1 END) as total_present, " +
 			"COUNT(CASE WHEN work_attendance_records.attendance_type = 'CHECK_IN' AND work_attendance_records.status = 'CHECK_IN' THEN 1 END) as on_time, " +
