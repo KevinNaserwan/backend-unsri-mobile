@@ -32,9 +32,7 @@ func SetupRoutes(router *gin.Engine, handler *AttendanceHandler, jwtToken *jwt.J
 		v1.POST("/manual", middleware.RoleMiddleware("dosen", "staff"), handler.CreateManualAttendance)
 		v1.PUT("/:id", middleware.RoleMiddleware("dosen", "staff"), handler.UpdateAttendance)
 
-		// Campus attendance (tap in/out)
-		v1.POST("/tap-in", handler.TapIn)
-		v1.POST("/tap-out", handler.TapOut)
+		// Campus attendance (tap in/out) - removed per request
 	}
 
 	// Schedule routes
@@ -54,11 +52,18 @@ func SetupRoutes(router *gin.Engine, handler *AttendanceHandler, jwtToken *jwt.J
 	workAttendance.Use(middleware.AuthMiddleware(jwtToken))
 	{
 		// Check-in/out
+<<<<<<< HEAD
 		workAttendance.POST("/check-in", middleware.RoleMiddleware("admin", "dosen", "staff"), handler.CheckIn)
 		workAttendance.POST("/check-out", middleware.RoleMiddleware("admin", "dosen", "staff"), handler.CheckOut)
 		workAttendance.GET("/records", middleware.RoleMiddleware("admin", "dosen", "staff"), handler.GetWorkAttendanceRecords)
 		workAttendance.GET("/statistics", middleware.RoleMiddleware("admin", "dosen", "staff"), handler.GetWorkAttendanceStatistics)
 		workAttendance.GET("/summaries", middleware.RoleMiddleware("admin", "dosen", "staff"), handler.GetWorkAttendanceSummaries)
+=======
+		workAttendance.POST("/check-in", handler.CheckIn)
+		workAttendance.POST("/check-out", handler.CheckOut)
+		workAttendance.GET("/records", handler.GetWorkAttendanceRecords)
+		workAttendance.GET("/all-records", middleware.RoleMiddleware("dosen", "staff"), handler.GetAllWorkAttendanceRecords)
+>>>>>>> origin
 
 		// Shift patterns (admin only)
 		shifts := workAttendance.Group("/shifts")

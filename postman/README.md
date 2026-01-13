@@ -44,33 +44,82 @@ Sekarang Anda bisa test semua API endpoints. Token akan otomatis digunakan untuk
 
 ## 📋 Collection Structure
 
-- **Authentication**
-  - Register
-  - Login
+Collection dirapikan menjadi tiga kategori utama:
 
-- **Users**
-  - Get Profile
-  - Update Profile
+- Core
+  - Authentication (Register, Login)
+  - Users (Get Profile, Update Profile, Search Users)
+  - Search (Search, Global Search)
+  - File Storage (Upload, List, Get by ID, Download, Upload Document)
+  - Access (Validate QR, History, Log, Permissions)
+  - Notifications, Broadcasts, Calendar, Master Data
 
-- **Attendance**
-  - Scan QR Code
-  - Get Attendance History
+- Academic
+  - Attendance (Scan QR, History)
+  - QR Code (Generate Class QR)
+  - Courses & Schedules (List Courses, List Schedules)
+  - Academic Reports
 
-- **QR Code**
-  - Generate Class QR
-  - Generate Access QR
+- HRIS
+  - Work Attendance (Check In, Check Out, Records)
+  - Location (Tap In, Tap Out)
+  - HRIS Reports
 
-- **Location**
-  - Tap In
-  - Tap Out
+## 🧭 Alur Penggunaan (Guided Flows)
 
-- **Search**
-  - Search Users
-  - Global Search
+### Absensi Mahasiswa (Academic)
 
-- **Reports**
-  - Attendance Report
-  - Academic Report
+1. Siapkan QR kelas
+   - Endpoint: POST /api/v1/qr/class/generate
+   - Prasyarat:
+     - Role dosen atau staff
+     - Kelas/schedule tersedia (course & schedule terdaftar)
+     - Body berisi course_id dan schedule_id
+2. Mahasiswa scan QR untuk absen
+   - Endpoint: POST /api/v1/attendance/qr/scan
+   - Prasyarat:
+     - Mahasiswa login (punya access_token)
+     - QR valid dan aktif untuk sesi kelas
+3. Cek riwayat absensi
+   - Endpoint: GET /api/v1/attendance/history
+   - Opsional: page, per_page
+
+### Kehadiran Kerja (HRIS)
+
+1. Pastikan shift/sesi kerja (opsional)
+   - Endpoint terkait:
+     - GET /api/v1/work-attendance/shifts
+     - GET /api/v1/work-attendance/sessions
+   - Tujuan: ada shift/sesi aktif untuk user sesuai kebijakan HR
+2. Check-in
+   - Endpoint: POST /api/v1/work-attendance/check-in
+   - Body (multipart/form-data):
+     - file `selfie` (wajib)
+     - `latitude`, `longitude` (opsional)
+     - `schedule_id` (opsional)
+     - `is_via_unsri_wifi` (boolean, opsional/tergantung kebijakan)
+   - Prasyarat:
+     - User login
+     - Berada dalam geofence/wifi yang diset (jika diaktifkan)
+3. Check-out
+   - Endpoint: POST /api/v1/work-attendance/check-out
+   - Body (multipart/form-data):
+     - file `selfie` (wajib)
+     - `latitude`, `longitude` (opsional)
+     - `schedule_id` (opsional)
+     - `is_via_unsri_wifi` (boolean, opsional/tergantung kebijakan)
+4. Lihat riwayat kehadiran kerja
+   - Endpoint: GET /api/v1/work-attendance/records
+   - Opsional: page, per_page, start_date, end_date, user_id
+
+### Akses Gate Kampus (Core)
+
+1. Generate QR akses personal
+   - Endpoint: GET /api/v1/qr/access/generate
+   - Prasyarat: user login
+2. Validasi QR di gate
+   - Endpoint: POST /api/v1/qr/gate/validate
+   - Catatan: endpoint publik untuk sistem gate (tanpa token)
 
 ## 🔧 Environment Variables
 
@@ -100,4 +149,3 @@ pm.request.headers.add({
 ## 📚 Documentation
 
 Lihat [API Documentation](../docs/API.md) untuk dokumentasi lengkap semua endpoints.
-

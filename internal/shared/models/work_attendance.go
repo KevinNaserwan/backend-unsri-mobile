@@ -159,11 +159,13 @@ type WorkAttendanceRecord struct {
 	GeofenceID     *string              `gorm:"type:uuid;index" json:"geofence_id,omitempty"`
 	SelfieURL      *string              `gorm:"type:varchar(500)" json:"selfie_url,omitempty"` // Selfie photo URL for check-in/out
 	Notes          string               `gorm:"type:text" json:"notes"`
+	SelfieFileID   *string              `gorm:"type:uuid;index" json:"selfie_file_id,omitempty"`
+	SelfieURL      *string              `gorm:"type:varchar(500)" json:"selfie_url,omitempty"`
 	CreatedAt      time.Time            `json:"created_at"`
 	UpdatedAt      time.Time            `json:"updated_at"`
 
 	// Relations
-	User     User          `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	User     *User         `gorm:"foreignKey:UserID" json:"user,omitempty"`
 	Schedule *WorkSchedule `gorm:"foreignKey:ScheduleID" json:"schedule,omitempty"`
 }
 

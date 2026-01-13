@@ -12,11 +12,8 @@ import (
 	"unsri-backend/internal/attendance/handler"
 	"unsri-backend/internal/attendance/repository"
 	"unsri-backend/internal/attendance/service"
-<<<<<<< HEAD
-=======
 	fileRepo "unsri-backend/internal/file-storage/repository"
 	fileSvc "unsri-backend/internal/file-storage/service"
->>>>>>> origin
 	locationRepo "unsri-backend/internal/location/repository"
 	"unsri-backend/internal/shared/database"
 	"unsri-backend/internal/shared/logger"
@@ -56,12 +53,6 @@ func main() {
 		&models.Attendance{},
 		&models.AttendanceSession{},
 		&models.Schedule{},
-		// Work Attendance (Kepegawaian) models
-		&models.ShiftPattern{},
-		&models.UserShift{},
-		&models.WorkSchedule{},
-		&models.WorkAttendanceSession{},
-		&models.WorkAttendanceRecord{},
 	); err != nil {
 		log.Fatal("Failed to migrate database", err)
 	}
@@ -73,17 +64,15 @@ func main() {
 		7*24*time.Hour, // Refresh token TTL
 	)
 
-	// Initialize repositories
+	// Initialize repository
 	attendanceRepo := repository.NewAttendanceRepository(db)
 	locationRepository := locationRepo.NewLocationRepository(db)
-<<<<<<< HEAD
-=======
 
-	// Initialize file storage (local or minio based on env)
+	// Initialize file storage (local/minio)
 	viper.SetDefault("STORAGE_TYPE", "minio")
 	viper.SetDefault("STORAGE_BASE_PATH", "./storage")
 	viper.SetDefault("STORAGE_BASE_URL", "http://localhost:8093/files")
-	viper.SetDefault("STORAGE_MAX_SIZE", int64(10<<20)) // 10MB
+	viper.SetDefault("STORAGE_MAX_SIZE", int64(10<<20))
 	viper.SetDefault("MINIO_ENDPOINT", "localhost:9000")
 	viper.SetDefault("MINIO_ACCESS_KEY", "minioadmin")
 	viper.SetDefault("MINIO_SECRET_KEY", "minioadmin")
@@ -91,7 +80,6 @@ func main() {
 	viper.SetDefault("MINIO_USE_SSL", false)
 	viper.SetDefault("MINIO_REGION", "")
 	viper.AutomaticEnv()
-	// Ensure storage directory exists (for local)
 	_ = os.MkdirAll(viper.GetString("STORAGE_BASE_PATH"), 0755)
 	filesRepository := fileRepo.NewFileRepository(db)
 	filesService := fileSvc.NewFileStorageService(filesRepository, fileSvc.StorageConfig{
@@ -106,7 +94,6 @@ func main() {
 		MinioUseSSL:    viper.GetBool("MINIO_USE_SSL"),
 		MinioRegion:    viper.GetString("MINIO_REGION"),
 	})
->>>>>>> origin
 
 	// Initialize service
 	attendanceService := service.NewAttendanceService(attendanceRepo, locationRepository, jwtToken)

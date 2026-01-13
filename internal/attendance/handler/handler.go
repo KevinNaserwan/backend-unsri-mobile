@@ -1,6 +1,7 @@
 package handler
 
 import (
+<<<<<<< HEAD
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,16 @@ import (
 
 	"unsri-backend/internal/attendance/service"
 	apperrors "unsri-backend/internal/shared/errors"
+=======
+	"errors"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
+	"unsri-backend/internal/attendance/service"
+	fileService "unsri-backend/internal/file-storage/service"
+>>>>>>> origin
 	"unsri-backend/internal/shared/logger"
 	"unsri-backend/internal/shared/utils"
 
@@ -22,13 +33,16 @@ import (
 type AttendanceHandler struct {
 	service *service.AttendanceService
 	logger  logger.Logger
+	files   *fileService.FileStorageService
 }
 
+// AttendanceHandler handles HTTP requests for attendance
 // NewAttendanceHandler creates a new attendance handler
-func NewAttendanceHandler(service *service.AttendanceService, logger logger.Logger) *AttendanceHandler {
+func NewAttendanceHandler(service *service.AttendanceService, logger logger.Logger, files *fileService.FileStorageService) *AttendanceHandler {
 	return &AttendanceHandler{
 		service: service,
 		logger:  logger,
+		files:   files,
 	}
 }
 
@@ -199,7 +213,18 @@ func (h *AttendanceHandler) GetOverview(c *gin.Context) {
 	userID := c.GetString("user_id")
 	userRole := c.GetString("user_role")
 
-	result, err := h.service.GetAttendanceOverview(c.Request.Context(), userID, userRole)
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+
+	var startDatePtr, endDatePtr *string
+	if startDate != "" {
+		startDatePtr = &startDate
+	}
+	if endDate != "" {
+		endDatePtr = &endDate
+	}
+
+	result, err := h.service.GetAttendanceOverview(c.Request.Context(), userID, userRole, startDatePtr, endDatePtr)
 	if err != nil {
 		utils.ErrorResponse(c, 0, err)
 		return
@@ -575,7 +600,9 @@ func (h *AttendanceHandler) GetWorkSchedules(c *gin.Context) {
 // CheckIn handles work check-in request
 func (h *AttendanceHandler) CheckIn(c *gin.Context) {
 	userID := c.GetString("user_id")
+	userRole := c.GetString("user_role")
 
+<<<<<<< HEAD
 	var req service.CheckInRequest
 
 	// Try to bind JSON first (for backward compatibility)
@@ -599,8 +626,56 @@ func (h *AttendanceHandler) CheckIn(c *gin.Context) {
 	} else {
 		// Selfie is required for check-in
 		utils.BadRequestResponse(c, "Selfie photo is required for check-in")
+=======
+	ct := c.Request.Header.Get("Content-Type")
+	if ct == "" || (ct != "" && !strings.Contains(ct, "multipart/form-data")) {
+		utils.ValidationErrorResponse(c, errors.New("selfie file is required"))
+>>>>>>> origin
 		return
 	}
+	file, err := c.FormFile("selfie")
+	if err != nil || file == nil {
+		utils.ValidationErrorResponse(c, errors.New("selfie file is required"))
+		return
+	}
+	var req service.CheckInRequest
+	uploaded, upErr := h.files.UploadFile(c.Request.Context(), userID, fileService.UploadFileRequest{
+		File:     file,
+		FileType: "selfie",
+		IsPublic: false,
+	})
+	if upErr != nil {
+		utils.ErrorResponse(c, 0, upErr)
+		return
+	}
+	req.SelfieFileID = &uploaded.ID
+	req.SelfieURL = &uploaded.URL
+	if v := c.PostForm("schedule_id"); v != "" {
+		req.ScheduleID = &v
+	}
+	if v := c.PostForm("latitude"); v != "" {
+		if f, perr := strconv.ParseFloat(v, 64); perr == nil {
+			req.Latitude = &f
+		}
+	}
+	if v := c.PostForm("longitude"); v != "" {
+		if f, perr := strconv.ParseFloat(v, 64); perr == nil {
+			req.Longitude = &f
+		}
+	}
+	if v := c.PostForm("is_via_unsri_wifi"); v != "" {
+		if b, perr := strconv.ParseBool(v); perr == nil {
+			req.IsViaUNSRIWiFi = &b
+		}
+	}
+	// Enforce UNSRI WiFi for dosen/staff
+	if userRole == "dosen" || userRole == "staff" {
+		if req.IsViaUNSRIWiFi == nil || (req.IsViaUNSRIWiFi != nil && !*req.IsViaUNSRIWiFi) {
+			utils.ValidationErrorResponse(c, errors.New("is_via_unsri_wifi must be true for dosen/staff"))
+			return
+		}
+	}
+	req.Notes = c.PostForm("notes")
 
 	result, err := h.service.CheckIn(c.Request.Context(), userID, req)
 	if err != nil {
@@ -614,7 +689,9 @@ func (h *AttendanceHandler) CheckIn(c *gin.Context) {
 // CheckOut handles work check-out request
 func (h *AttendanceHandler) CheckOut(c *gin.Context) {
 	userID := c.GetString("user_id")
+	userRole := c.GetString("user_role")
 
+<<<<<<< HEAD
 	var req service.CheckOutRequest
 
 	// Try to bind JSON first (for backward compatibility)
@@ -638,8 +715,56 @@ func (h *AttendanceHandler) CheckOut(c *gin.Context) {
 	} else {
 		// Selfie is required for check-out
 		utils.BadRequestResponse(c, "Selfie photo is required for check-out")
+=======
+	ct := c.Request.Header.Get("Content-Type")
+	if ct == "" || (ct != "" && !strings.Contains(ct, "multipart/form-data")) {
+		utils.ValidationErrorResponse(c, errors.New("selfie file is required"))
+>>>>>>> origin
 		return
 	}
+	file, err := c.FormFile("selfie")
+	if err != nil || file == nil {
+		utils.ValidationErrorResponse(c, errors.New("selfie file is required"))
+		return
+	}
+	var req service.CheckOutRequest
+	uploaded, upErr := h.files.UploadFile(c.Request.Context(), userID, fileService.UploadFileRequest{
+		File:     file,
+		FileType: "selfie",
+		IsPublic: false,
+	})
+	if upErr != nil {
+		utils.ErrorResponse(c, 0, upErr)
+		return
+	}
+	req.SelfieFileID = &uploaded.ID
+	req.SelfieURL = &uploaded.URL
+	if v := c.PostForm("schedule_id"); v != "" {
+		req.ScheduleID = &v
+	}
+	if v := c.PostForm("latitude"); v != "" {
+		if f, perr := strconv.ParseFloat(v, 64); perr == nil {
+			req.Latitude = &f
+		}
+	}
+	if v := c.PostForm("longitude"); v != "" {
+		if f, perr := strconv.ParseFloat(v, 64); perr == nil {
+			req.Longitude = &f
+		}
+	}
+	if v := c.PostForm("is_via_unsri_wifi"); v != "" {
+		if b, perr := strconv.ParseBool(v); perr == nil {
+			req.IsViaUNSRIWiFi = &b
+		}
+	}
+	// Enforce UNSRI WiFi for dosen/staff
+	if userRole == "dosen" || userRole == "staff" {
+		if req.IsViaUNSRIWiFi == nil || (req.IsViaUNSRIWiFi != nil && !*req.IsViaUNSRIWiFi) {
+			utils.ValidationErrorResponse(c, errors.New("is_via_unsri_wifi must be true for dosen/staff"))
+			return
+		}
+	}
+	req.Notes = c.PostForm("notes")
 
 	result, err := h.service.CheckOut(c.Request.Context(), userID, req)
 	if err != nil {
@@ -648,6 +773,32 @@ func (h *AttendanceHandler) CheckOut(c *gin.Context) {
 	}
 
 	utils.SuccessResponse(c, http.StatusCreated, result)
+}
+
+// GetAllWorkAttendanceRecords handles get all work attendance records request
+func (h *AttendanceHandler) GetAllWorkAttendanceRecords(c *gin.Context) {
+	var req service.GetAllWorkAttendanceRecordsRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		utils.ValidationErrorResponse(c, err)
+		return
+	}
+
+	records, total, err := h.service.GetAllWorkAttendanceRecords(c.Request.Context(), req)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	perPage := req.PerPage
+	if perPage < 1 {
+		perPage = 20
+	}
+
+	utils.PaginatedResponse(c, records, page, perPage, total)
 }
 
 // GetWorkAttendanceRecords handles get work attendance records request
@@ -682,6 +833,7 @@ func (h *AttendanceHandler) GetWorkAttendanceRecords(c *gin.Context) {
 
 	utils.PaginatedResponse(c, records, page, perPage, total)
 }
+<<<<<<< HEAD
 
 // uploadSelfieToStorage uploads selfie to file storage service
 func (h *AttendanceHandler) uploadSelfieToStorage(c *gin.Context, userID string, file *multipart.FileHeader) (string, error) {
@@ -811,3 +963,5 @@ func (h *AttendanceHandler) GetWorkAttendanceSummaries(c *gin.Context) {
 
 	utils.SuccessResponse(c, http.StatusOK, summaries)
 }
+=======
+>>>>>>> origin

@@ -8,11 +8,11 @@ import (
 
 // Config holds the configuration for file storage service
 type Config struct {
-	Port            string
-	Database        DatabaseConfig
-	JWT             JWTConfig
-	Storage         StorageConfig
-	LogLevel        string
+	Port     string
+	Database DatabaseConfig
+	JWT      JWTConfig
+	Storage  StorageConfig
+	LogLevel string
 }
 
 // DatabaseConfig holds database configuration
@@ -30,6 +30,7 @@ type DatabaseConfig struct {
 
 // StorageConfig holds storage configuration
 type StorageConfig struct {
+<<<<<<< HEAD
 	Type      string // local, s3, minio
 	BasePath  string
 	BaseURL   string
@@ -47,6 +48,18 @@ type MinIOConfig struct {
 	BucketProfiles  string
 	BucketSelfies   string
 	BucketDocuments string
+=======
+	Type           string // local, s3, minio
+	BasePath       string
+	BaseURL        string
+	MaxSize        int64 // in bytes
+	MinioEndpoint  string
+	MinioAccessKey string
+	MinioSecretKey string
+	MinioBucket    string
+	MinioUseSSL    bool
+	MinioRegion    string
+>>>>>>> origin
 }
 
 // JWTConfig holds JWT configuration
@@ -71,11 +84,17 @@ func Load() *Config {
 	viper.SetDefault("MINIO_ENDPOINT", "localhost:9000")
 	viper.SetDefault("MINIO_ACCESS_KEY", "minioadmin")
 	viper.SetDefault("MINIO_SECRET_KEY", "minioadmin")
+<<<<<<< HEAD
 	viper.SetDefault("MINIO_USE_SSL", false)
 	viper.SetDefault("MINIO_REGION", "us-east-1")
 	viper.SetDefault("MINIO_BUCKET_PROFILES", "unsri-profiles")
 	viper.SetDefault("MINIO_BUCKET_SELFIES", "unsri-selfies")
 	viper.SetDefault("MINIO_BUCKET_DOCUMENTS", "unsri-documents")
+=======
+	viper.SetDefault("MINIO_BUCKET", "unsri")
+	viper.SetDefault("MINIO_USE_SSL", false)
+	viper.SetDefault("MINIO_REGION", "")
+>>>>>>> origin
 	viper.SetDefault("JWT_SECRET", "your-secret-key-change-in-production")
 
 	viper.AutomaticEnv()
@@ -95,6 +114,7 @@ func Load() *Config {
 			ConnMaxLifetime: 5 * time.Minute,
 		},
 		Storage: StorageConfig{
+<<<<<<< HEAD
 			Type:     viper.GetString("STORAGE_TYPE"),
 			BasePath: viper.GetString("STORAGE_BASE_PATH"),
 			BaseURL:  viper.GetString("STORAGE_BASE_URL"),
@@ -109,10 +129,21 @@ func Load() *Config {
 				BucketSelfies:   viper.GetString("MINIO_BUCKET_SELFIES"),
 				BucketDocuments: viper.GetString("MINIO_BUCKET_DOCUMENTS"),
 			},
+=======
+			Type:           viper.GetString("STORAGE_TYPE"),
+			BasePath:       viper.GetString("STORAGE_BASE_PATH"),
+			BaseURL:        viper.GetString("STORAGE_BASE_URL"),
+			MaxSize:        viper.GetInt64("STORAGE_MAX_SIZE"),
+			MinioEndpoint:  viper.GetString("MINIO_ENDPOINT"),
+			MinioAccessKey: viper.GetString("MINIO_ACCESS_KEY"),
+			MinioSecretKey: viper.GetString("MINIO_SECRET_KEY"),
+			MinioBucket:    viper.GetString("MINIO_BUCKET"),
+			MinioUseSSL:    viper.GetBool("MINIO_USE_SSL"),
+			MinioRegion:    viper.GetString("MINIO_REGION"),
+>>>>>>> origin
 		},
 		JWT: JWTConfig{
 			SecretKey: viper.GetString("JWT_SECRET"),
 		},
 	}
 }
-

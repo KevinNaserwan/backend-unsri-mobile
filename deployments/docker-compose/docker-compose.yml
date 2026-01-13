@@ -150,14 +150,25 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - JWT_SECRET=your-secret-key-change-in-production
+<<<<<<< HEAD
       - FILE_STORAGE_SERVICE_URL=http://file-storage-service:8093
+=======
+      - STORAGE_TYPE=local
+      - STORAGE_BASE_PATH=/storage
+      - STORAGE_BASE_URL=http://localhost:8093/files
+      - STORAGE_MAX_SIZE=10485760
+>>>>>>> origin
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      file-storage-service:
+        condition: service_started
     networks:
       - unsri-network
+    volumes:
+      - file_storage:/storage
     restart: unless-stopped
 
   course-service:

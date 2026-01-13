@@ -15,8 +15,6 @@ func SetupRoutes(router *gin.Engine, handler *LocationHandler, jwtToken *jwt.JWT
 	v1 := router.Group("/api/v1/location")
 	v1.Use(middleware.AuthMiddleware(jwtToken))
 	{
-		v1.POST("/tap-in", handler.TapIn)
-		v1.POST("/tap-out", handler.TapOut)
 		v1.GET("/check-in-status", handler.GetCheckInStatus)
 		v1.GET("/history", handler.GetLocationHistory)
 		v1.GET("/geofences", handler.GetGeofences)
