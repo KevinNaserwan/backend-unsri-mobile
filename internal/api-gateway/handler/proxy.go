@@ -18,7 +18,6 @@ import (
 	courseService "unsri-backend/internal/course/service"
 	fileService "unsri-backend/internal/file-storage/service"
 	leaveService "unsri-backend/internal/leave/service"
-	locationService "unsri-backend/internal/location/service"
 	masterDataService "unsri-backend/internal/master-data/service"
 	notificationService "unsri-backend/internal/notification/service"
 	qrService "unsri-backend/internal/qr/service"
@@ -856,10 +855,10 @@ func (h *ProxyHandler) ProxyLeave(c *gin.Context) {
 // proxyRequest proxies a request to the target service
 func (h *ProxyHandler) proxyRequest(c *gin.Context, targetURL string) {
 	startTime := time.Now()
-	
+
 	// Extract service name from URL
 	serviceName := h.extractServiceName(targetURL)
-	
+
 	// Get user ID from context if available
 	userID := c.GetString("user_id")
 	// Note: User ID will be set by auth middleware if token is valid
@@ -903,10 +902,10 @@ func (h *ProxyHandler) proxyRequest(c *gin.Context, targetURL string) {
 	// Send request
 	resp, err := h.client.Do(req)
 	duration := time.Since(startTime).Milliseconds()
-	
+
 	if err != nil {
 		h.logger.Errorf("Failed to proxy request to %s: %v", url, err)
-		
+
 		// Publish request log to message broker
 		if h.messageBroker != nil {
 			if err := h.messageBroker.PublishRequestLog(&RequestLog{
@@ -925,7 +924,7 @@ func (h *ProxyHandler) proxyRequest(c *gin.Context, targetURL string) {
 				h.logger.Warnf("Failed to publish request log: %v", err)
 			}
 		}
-		
+
 		c.JSON(http.StatusBadGateway, gin.H{"error": "failed to reach service"})
 		return
 	}
@@ -1008,7 +1007,7 @@ func (h *ProxyHandler) extractServiceName(url string) string {
 		h.cfg.MasterDataServiceURL:   "master-data",
 		h.cfg.LeaveServiceURL:        "leave",
 	}
-	
+
 	if service, ok := serviceMap[url]; ok {
 		return service
 	}
@@ -1021,7 +1020,7 @@ func (h *ProxyHandler) shouldAudit(method, path string) bool {
 	if method == "POST" || method == "PUT" || method == "DELETE" {
 		return true
 	}
-	
+
 	// Audit sensitive GET operations
 	sensitivePaths := []string{
 		"/profile",
@@ -1030,13 +1029,13 @@ func (h *ProxyHandler) shouldAudit(method, path string) bool {
 		"/transcript",
 		"/krs",
 	}
-	
+
 	for _, sensitivePath := range sensitivePaths {
 		if contains(path, sensitivePath) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -1080,10 +1079,10 @@ func splitPath(path string) []string {
 }
 
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || 
-		(len(s) > len(substr) && (s[:len(substr)] == substr || 
-		s[len(s)-len(substr):] == substr || 
-		findSubstring(s, substr))))
+	return len(s) >= len(substr) && (s == substr ||
+		(len(s) > len(substr) && (s[:len(substr)] == substr ||
+			s[len(s)-len(substr):] == substr ||
+			findSubstring(s, substr))))
 }
 
 func findSubstring(s, substr string) bool {
@@ -1104,7 +1103,6 @@ func KeepImports() {
 	var _ courseService.CreateCourseRequest
 	var _ fileService.UploadFileRequest
 	var _ leaveService.CreateLeaveRequestRequest
-	var _ locationService.TapInRequest
 	var _ masterDataService.CreateStudyProgramRequest
 	var _ notificationService.SendNotificationRequest
 	var _ qrService.GenerateQRRequest

@@ -8,7 +8,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"unsri-backend/internal/file-storage/config"
 	"unsri-backend/internal/file-storage/handler"
 	"unsri-backend/internal/file-storage/repository"
@@ -17,6 +16,8 @@ import (
 	"unsri-backend/internal/shared/logger"
 	"unsri-backend/internal/shared/models"
 	"unsri-backend/pkg/jwt"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -59,16 +60,29 @@ func main() {
 
 	fileRepo := repository.NewFileRepository(db)
 	fileService := service.NewFileStorageService(fileRepo, service.StorageConfig{
-		Type:     cfg.Storage.Type,
-		BasePath: cfg.Storage.BasePath,
-		BaseURL:  cfg.Storage.BaseURL,
-		MaxSize:  cfg.Storage.MaxSize,
+		Type:           cfg.Storage.Type,
+		BasePath:       cfg.Storage.BasePath,
+		BaseURL:        cfg.Storage.BaseURL,
+		MaxSize:        cfg.Storage.MaxSize,
+		MinioEndpoint:  cfg.Storage.MinioEndpoint,
+		MinioAccessKey: cfg.Storage.MinioAccessKey,
+		MinioSecretKey: cfg.Storage.MinioSecretKey,
+		MinioBucket:    cfg.Storage.MinioBucket,
+		MinioUseSSL:    cfg.Storage.MinioUseSSL,
+		MinioRegion:    cfg.Storage.MinioRegion,
 	})
 	fileHandler := handler.NewFileStorageHandler(fileService, log)
 
 	router := gin.Default()
 	router.Use(gin.Recovery())
 	router.MaxMultipartMemory = 10 << 20 // 10 MB
+
+	// Serve static files if storage type is local
+	if cfg.Storage.Type == "local" {
+		log.Infof("Serving static files from %s at /files", cfg.Storage.BasePath)
+		router.Static("/files", cfg.Storage.BasePath)
+	}
+
 	handler.SetupRoutes(router, fileHandler, jwtToken)
 
 	srv := &http.Server{
@@ -99,4 +113,3 @@ func main() {
 
 	log.Info("Server exited")
 }
-

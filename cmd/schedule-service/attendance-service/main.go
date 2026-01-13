@@ -8,15 +8,20 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"unsri-backend/internal/attendance/config"
 	"unsri-backend/internal/attendance/handler"
 	"unsri-backend/internal/attendance/repository"
 	"unsri-backend/internal/attendance/service"
+	fileRepo "unsri-backend/internal/file-storage/repository"
+	fileSvc "unsri-backend/internal/file-storage/service"
+	locationRepo "unsri-backend/internal/location/repository"
 	"unsri-backend/internal/shared/database"
 	"unsri-backend/internal/shared/logger"
 	"unsri-backend/internal/shared/models"
 	"unsri-backend/pkg/jwt"
+
+	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 )
 
 func main() {
@@ -55,18 +60,46 @@ func main() {
 	// Initialize JWT
 	jwtToken := jwt.NewJWT(
 		cfg.JWT.SecretKey,
-		15*time.Minute,  // Access token TTL
-		7*24*time.Hour,  // Refresh token TTL
+		15*time.Minute, // Access token TTL
+		7*24*time.Hour, // Refresh token TTL
 	)
 
 	// Initialize repository
 	attendanceRepo := repository.NewAttendanceRepository(db)
+	locationRepository := locationRepo.NewLocationRepository(db)
+
+	// Initialize file storage (local/minio)
+	viper.SetDefault("STORAGE_TYPE", "minio")
+	viper.SetDefault("STORAGE_BASE_PATH", "./storage")
+	viper.SetDefault("STORAGE_BASE_URL", "http://localhost:8093/files")
+	viper.SetDefault("STORAGE_MAX_SIZE", int64(10<<20))
+	viper.SetDefault("MINIO_ENDPOINT", "localhost:9000")
+	viper.SetDefault("MINIO_ACCESS_KEY", "minioadmin")
+	viper.SetDefault("MINIO_SECRET_KEY", "minioadmin")
+	viper.SetDefault("MINIO_BUCKET", "unsri")
+	viper.SetDefault("MINIO_USE_SSL", false)
+	viper.SetDefault("MINIO_REGION", "")
+	viper.AutomaticEnv()
+	_ = os.MkdirAll(viper.GetString("STORAGE_BASE_PATH"), 0755)
+	filesRepository := fileRepo.NewFileRepository(db)
+	filesService := fileSvc.NewFileStorageService(filesRepository, fileSvc.StorageConfig{
+		Type:           viper.GetString("STORAGE_TYPE"),
+		BasePath:       viper.GetString("STORAGE_BASE_PATH"),
+		BaseURL:        viper.GetString("STORAGE_BASE_URL"),
+		MaxSize:        viper.GetInt64("STORAGE_MAX_SIZE"),
+		MinioEndpoint:  viper.GetString("MINIO_ENDPOINT"),
+		MinioAccessKey: viper.GetString("MINIO_ACCESS_KEY"),
+		MinioSecretKey: viper.GetString("MINIO_SECRET_KEY"),
+		MinioBucket:    viper.GetString("MINIO_BUCKET"),
+		MinioUseSSL:    viper.GetBool("MINIO_USE_SSL"),
+		MinioRegion:    viper.GetString("MINIO_REGION"),
+	})
 
 	// Initialize service
-	attendanceService := service.NewAttendanceService(attendanceRepo, jwtToken)
+	attendanceService := service.NewAttendanceService(attendanceRepo, locationRepository, jwtToken)
 
 	// Initialize handler
-	attendanceHandler := handler.NewAttendanceHandler(attendanceService, log)
+	attendanceHandler := handler.NewAttendanceHandler(attendanceService, log, filesService)
 
 	// Setup router
 	router := gin.Default()
@@ -104,4 +137,3 @@ func main() {
 
 	log.Info("Server exited")
 }
-

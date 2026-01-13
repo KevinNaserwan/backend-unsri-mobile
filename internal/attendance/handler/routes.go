@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"unsri-backend/internal/attendance/middleware"
 	"unsri-backend/pkg/jwt"
+
+	"github.com/gin-gonic/gin"
 )
 
 // SetupRoutes sets up all routes for attendance service
@@ -31,9 +32,7 @@ func SetupRoutes(router *gin.Engine, handler *AttendanceHandler, jwtToken *jwt.J
 		v1.POST("/manual", middleware.RoleMiddleware("dosen", "staff"), handler.CreateManualAttendance)
 		v1.PUT("/:id", middleware.RoleMiddleware("dosen", "staff"), handler.UpdateAttendance)
 
-		// Campus attendance (tap in/out)
-		v1.POST("/tap-in", handler.TapIn)
-		v1.POST("/tap-out", handler.TapOut)
+		// Campus attendance (tap in/out) - removed per request
 	}
 
 	// Schedule routes
@@ -56,6 +55,7 @@ func SetupRoutes(router *gin.Engine, handler *AttendanceHandler, jwtToken *jwt.J
 		workAttendance.POST("/check-in", handler.CheckIn)
 		workAttendance.POST("/check-out", handler.CheckOut)
 		workAttendance.GET("/records", handler.GetWorkAttendanceRecords)
+		workAttendance.GET("/all-records", middleware.RoleMiddleware("dosen", "staff"), handler.GetAllWorkAttendanceRecords)
 
 		// Shift patterns (admin only)
 		shifts := workAttendance.Group("/shifts")
@@ -85,4 +85,3 @@ func SetupRoutes(router *gin.Engine, handler *AttendanceHandler, jwtToken *jwt.J
 		}
 	}
 }
-

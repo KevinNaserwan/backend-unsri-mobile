@@ -98,6 +98,29 @@
               "path": ["api", "v1", "users", "profile"]
             }
           }
+        },
+        {
+          "name": "Search Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/search?q=&role=&page=1&per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "search"],
+              "query": [
+                { "key": "q", "value": "" },
+                { "key": "role", "value": "" },
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "20" }
+              ]
+            }
+          }
         }
       ]
     },
@@ -914,6 +937,48 @@
                 {
                   "key": "user_id",
                   "value": ""
+                },
+                {
+                  "key": "start_date",
+                  "value": ""
+                },
+                {
+                  "key": "end_date",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Work Attendance Records",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/work-attendance/all-records?page=1&per_page=20&start_date=&end_date=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "work-attendance",
+                "all-records"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "20"
                 },
                 {
                   "key": "start_date",
@@ -2954,10 +3019,460 @@
       ]
     }
   ],
+  "item": [
+    {
+      "name": "Core",
+      "item": [
+        {
+          "name": "Authentication",
+          "item": [
+            {
+              "name": "Login (Core)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"admin@unsri.ac.id\",\n  \"password\": \"password123\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/auth/login",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "auth", "login"]
+                }
+              }
+            },
+            {
+              "name": "Register (Core)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@unsri.ac.id\",\n  \"password\": \"password123\",\n  \"role\": \"mahasiswa\",\n  \"name\": \"Nama User\",\n  \"nim\": \"1234567890\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/auth/register",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "auth", "register"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Users",
+          "item": [
+            {
+              "name": "Get Profile (Core)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/users/profile",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "users", "profile"]
+                }
+              }
+            },
+            {
+              "name": "Update Profile (Core)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@unsri.ac.id\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/users/profile",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "users", "profile"]
+                }
+              }
+            },
+            {
+              "name": "Search Users (Core)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/users/search?q=&role=&page=1&per_page=20",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "users", "search"],
+                  "query": [
+                    { "key": "q", "value": "" },
+                    { "key": "role", "value": "" },
+                    { "key": "page", "value": "1" },
+                    { "key": "per_page", "value": "20" }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Academic",
+      "item": [
+        {
+          "name": "Attendance",
+          "item": [
+            {
+              "name": "Scan QR (Academic)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"qr_code\": \"<kode_qr_kelas>\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/attendance/qr/scan",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "attendance", "qr", "scan"]
+                }
+              }
+            },
+            {
+              "name": "Get Attendance History (Academic)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/attendance/history?page=1&per_page=20",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "attendance", "history"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "per_page", "value": "20" }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "QR Code",
+          "item": [
+            {
+              "name": "Generate Class QR (Academic)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"course_id\": \"<course_id>\",\n  \"schedule_id\": \"<schedule_id>\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/qr/class/generate",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "qr", "class", "generate"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Courses & Schedules",
+          "item": [
+            {
+              "name": "Get Courses (Academic)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/courses?page=1&per_page=20",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "courses"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "per_page", "value": "20" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Schedules (Academic)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/schedules?page=1&per_page=20",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "schedules"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "per_page", "value": "20" }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HRIS",
+      "item": [
+        {
+          "name": "Work Attendance",
+          "item": [
+            {
+              "name": "Check In (HRIS)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    { "key": "selfie", "type": "file", "src": [] },
+                    { "key": "schedule_id", "value": "", "type": "text" },
+                    { "key": "latitude", "value": "-2.9914", "type": "text" },
+                    { "key": "longitude", "value": "104.7565", "type": "text" },
+                    { "key": "is_via_unsri_wifi", "value": "true", "type": "text" },
+                    { "key": "notes", "value": "Check in from office", "type": "text" }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/work-attendance/check-in",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "work-attendance", "check-in"]
+                }
+              }
+            },
+            {
+              "name": "Check Out (HRIS)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    { "key": "selfie", "type": "file", "src": [] },
+                    { "key": "schedule_id", "value": "", "type": "text" },
+                    { "key": "latitude", "value": "-2.9914", "type": "text" },
+                    { "key": "longitude", "value": "104.7565", "type": "text" },
+                    { "key": "is_via_unsri_wifi", "value": "true", "type": "text" },
+                    { "key": "notes", "value": "Check out from office", "type": "text" }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/work-attendance/check-out",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "work-attendance", "check-out"]
+                }
+              }
+            },
+            {
+              "name": "Get Records (HRIS)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/work-attendance/records?page=1&per_page=20",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "work-attendance", "records"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "per_page", "value": "20" }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Location",
+          "item": [
+            {
+              "name": "Tap In (HRIS)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"latitude\": -2.9914,\n  \"longitude\": 104.7565\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/location/tap-in",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "location", "tap-in"]
+                }
+              }
+            },
+            {
+              "name": "Tap Out (HRIS)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{access_token}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"latitude\": -2.9914,\n  \"longitude\": 104.7565\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/location/tap-out",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "location", "tap-out"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Location",
+      "item": [
+        {
+          "name": "Get Geofences",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/location/geofences",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "location",
+                "geofences"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Geofence",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Kampus Palembang\",\n    \"description\": \"Kampus Utama Bukit Besar\",\n    \"latitude\": -2.986389,\n    \"longitude\": 104.730556,\n    \"radius\": 500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/location/geofences",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "location",
+                "geofences"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Location",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"latitude\": -2.986389,\n    \"longitude\": 104.730556\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/location/validate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "location",
+                "validate"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
   "variable": [
     {
       "key": "base_url",
-      "value": "https://backend.parkir-dishub-palembang.com",
+      "value": "http://localhost:8080",
       "type": "string"
     },
     {

@@ -591,6 +591,31 @@ func (r *AttendanceRepository) GetWorkAttendanceRecordByID(ctx context.Context, 
 	return &record, nil
 }
 
+// GetAllWorkAttendanceRecords gets all work attendance records with pagination and date filtering
+func (r *AttendanceRepository) GetAllWorkAttendanceRecords(ctx context.Context, startDate, endDate *time.Time, limit, offset int) ([]models.WorkAttendanceRecord, int64, error) {
+	var records []models.WorkAttendanceRecord
+	var total int64
+
+	query := r.db.WithContext(ctx).Model(&models.WorkAttendanceRecord{})
+
+	if startDate != nil {
+		query = query.Where("DATE(recorded_at) >= ?", startDate)
+	}
+	if endDate != nil {
+		query = query.Where("DATE(recorded_at) <= ?", endDate)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.Preload("User").Preload("Schedule").Order("recorded_at DESC").Limit(limit).Offset(offset).Find(&records).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return records, total, nil
+}
+
 // GetWorkAttendanceRecordsByUserID gets work attendance records by user ID
 func (r *AttendanceRepository) GetWorkAttendanceRecordsByUserID(ctx context.Context, userID string, startDate, endDate *time.Time, limit, offset int) ([]models.WorkAttendanceRecord, int64, error) {
 	var records []models.WorkAttendanceRecord

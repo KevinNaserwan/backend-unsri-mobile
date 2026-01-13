@@ -23,44 +23,6 @@ func NewLocationHandler(service *service.LocationService, logger logger.Logger) 
 	}
 }
 
-// TapIn handles tap in request
-func (h *LocationHandler) TapIn(c *gin.Context) {
-	userID := c.GetString("user_id")
-
-	var req service.TapInRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ValidationErrorResponse(c, err)
-		return
-	}
-
-	result, err := h.service.TapIn(c.Request.Context(), userID, req)
-	if err != nil {
-		utils.ErrorResponse(c, 0, err)
-		return
-	}
-
-	utils.SuccessResponse(c, http.StatusOK, result)
-}
-
-// TapOut handles tap out request
-func (h *LocationHandler) TapOut(c *gin.Context) {
-	userID := c.GetString("user_id")
-
-	var req service.TapOutRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ValidationErrorResponse(c, err)
-		return
-	}
-
-	result, err := h.service.TapOut(c.Request.Context(), userID, req)
-	if err != nil {
-		utils.ErrorResponse(c, 0, err)
-		return
-	}
-
-	utils.SuccessResponse(c, http.StatusOK, result)
-}
-
 // GetCheckInStatus handles get check-in status request
 func (h *LocationHandler) GetCheckInStatus(c *gin.Context) {
 	userID := c.GetString("user_id")

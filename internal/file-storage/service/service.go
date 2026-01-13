@@ -7,11 +7,14 @@ import (
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"unsri-backend/internal/file-storage/repository"
 	apperrors "unsri-backend/internal/shared/errors"
 	"unsri-backend/internal/shared/models"
 
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/google/uuid"
 )
 
@@ -27,6 +30,12 @@ type StorageConfig struct {
 	BasePath string
 	BaseURL  string
 	MaxSize  int64
+	MinioEndpoint string
+	MinioAccessKey string
+	MinioSecretKey string
+	MinioBucket    string
+	MinioUseSSL    bool
+	MinioRegion    string
 }
 
 // NewFileStorageService creates a new file storage service
@@ -55,28 +64,59 @@ func (s *FileStorageService) UploadFile(ctx context.Context, userID string, req 
 	ext := filepath.Ext(req.File.Filename)
 	fileName := fmt.Sprintf("%s%s", uuid.New().String(), ext)
 
-	// Create directory if not exists
-	fileDir := filepath.Join(s.config.BasePath, req.FileType)
-	if err := os.MkdirAll(fileDir, 0755); err != nil {
-		return nil, apperrors.NewInternalError("failed to create directory", err)
-	}
+	var storedPath string
+	var fileURL string
+	var mimeType string = req.File.Header.Get("Content-Type")
 
-	// Save file
-	filePath := filepath.Join(fileDir, fileName)
-	dst, err := os.Create(filePath)
-	if err != nil {
-		return nil, apperrors.NewInternalError("failed to create file", err)
-	}
-	defer dst.Close()
-
-	src, err := req.File.Open()
-	if err != nil {
-		return nil, apperrors.NewInternalError("failed to open file", err)
-	}
-	defer src.Close()
-
-	if _, err := io.Copy(dst, src); err != nil {
-		return nil, apperrors.NewInternalError("failed to save file", err)
+	// Handle storage based on type
+	if strings.EqualFold(s.config.Type, "minio") || strings.EqualFold(s.config.Type, "s3") {
+		if s.config.MinioEndpoint == "" || s.config.MinioAccessKey == "" || s.config.MinioSecretKey == "" || s.config.MinioBucket == "" {
+			return nil, apperrors.NewInternalError("minio configuration incomplete", nil)
+		}
+		objKey := filepath.ToSlash(filepath.Join(req.FileType, fileName))
+		client, err := minio.New(s.config.MinioEndpoint, &minio.Options{
+			Creds:  credentials.NewStaticV4(s.config.MinioAccessKey, s.config.MinioSecretKey, ""),
+			Secure: s.config.MinioUseSSL,
+			Region: s.config.MinioRegion,
+		})
+		if err != nil {
+			return nil, apperrors.NewInternalError("failed to init minio client", err)
+		}
+		src, err := req.File.Open()
+		if err != nil {
+			return nil, apperrors.NewInternalError("failed to open file", err)
+		}
+		defer src.Close()
+		_, err = client.PutObject(ctx, s.config.MinioBucket, objKey, src, req.File.Size, minio.PutObjectOptions{ContentType: mimeType})
+		if err != nil {
+			return nil, apperrors.NewInternalError("failed to upload to minio", err)
+		}
+		storedPath = objKey
+		if s.config.BaseURL != "" {
+			fileURL = fmt.Sprintf("%s/%s/%s", strings.TrimRight(s.config.BaseURL, "/"), s.config.MinioBucket, objKey)
+		}
+	} else {
+		// Local storage
+		fileDir := filepath.Join(s.config.BasePath, req.FileType)
+		if err := os.MkdirAll(fileDir, 0755); err != nil {
+			return nil, apperrors.NewInternalError("failed to create directory", err)
+		}
+		filePath := filepath.Join(fileDir, fileName)
+		dst, err := os.Create(filePath)
+		if err != nil {
+			return nil, apperrors.NewInternalError("failed to create file", err)
+		}
+		defer dst.Close()
+		src, err := req.File.Open()
+		if err != nil {
+			return nil, apperrors.NewInternalError("failed to open file", err)
+		}
+		defer src.Close()
+		if _, err := io.Copy(dst, src); err != nil {
+			return nil, apperrors.NewInternalError("failed to save file", err)
+		}
+		storedPath = filePath
+		fileURL = fmt.Sprintf("%s/%s/%s", strings.TrimRight(s.config.BaseURL, "/"), req.FileType, fileName)
 	}
 
 	// Create file record
@@ -85,15 +125,18 @@ func (s *FileStorageService) UploadFile(ctx context.Context, userID string, req 
 		FileName:     fileName,
 		OriginalName: req.File.Filename,
 		FileType:     req.FileType,
-		MimeType:     req.File.Header.Get("Content-Type"),
+		MimeType:     mimeType,
 		Size:         req.File.Size,
-		Path:         filePath,
-		URL:          fmt.Sprintf("%s/%s/%s", s.config.BaseURL, req.FileType, fileName),
+		Path:         storedPath,
+		URL:          fileURL,
 		IsPublic:     req.IsPublic,
 	}
 
 	if err := s.repo.CreateFile(ctx, file); err != nil {
-		_ = os.Remove(filePath) // Cleanup on error
+		// Attempt cleanup on error
+		if !strings.EqualFold(s.config.Type, "minio") && storedPath != "" {
+			_ = os.Remove(storedPath)
+		}
 		return nil, apperrors.NewInternalError("failed to create file record", err)
 	}
 
@@ -144,8 +187,23 @@ func (s *FileStorageService) DeleteFile(ctx context.Context, id string, userID s
 	}
 
 	// Delete physical file
-	if err := os.Remove(file.Path); err != nil && !os.IsNotExist(err) {
-		return apperrors.NewInternalError("failed to delete file", err)
+	if strings.EqualFold(s.config.Type, "minio") || strings.EqualFold(s.config.Type, "s3") {
+		client, cerr := minio.New(s.config.MinioEndpoint, &minio.Options{
+			Creds:  credentials.NewStaticV4(s.config.MinioAccessKey, s.config.MinioSecretKey, ""),
+			Secure: s.config.MinioUseSSL,
+			Region: s.config.MinioRegion,
+		})
+		if cerr != nil {
+			return apperrors.NewInternalError("failed to init minio client", cerr)
+		}
+		objKey := file.Path
+		if err := client.RemoveObject(ctx, s.config.MinioBucket, objKey, minio.RemoveObjectOptions{}); err != nil {
+			return apperrors.NewInternalError("failed to delete file from minio", err)
+		}
+	} else {
+		if err := os.Remove(file.Path); err != nil && !os.IsNotExist(err) {
+			return apperrors.NewInternalError("failed to delete file", err)
+		}
 	}
 
 	// Delete record
@@ -199,9 +257,30 @@ func (s *FileStorageService) GetFileContent(ctx context.Context, id string) ([]b
 		return nil, "", apperrors.NewNotFoundError("file", id)
 	}
 
-	content, err := os.ReadFile(file.Path)
-	if err != nil {
-		return nil, "", apperrors.NewInternalError("failed to read file", err)
+	var content []byte
+	if strings.EqualFold(s.config.Type, "minio") || strings.EqualFold(s.config.Type, "s3") {
+		client, cerr := minio.New(s.config.MinioEndpoint, &minio.Options{
+			Creds:  credentials.NewStaticV4(s.config.MinioAccessKey, s.config.MinioSecretKey, ""),
+			Secure: s.config.MinioUseSSL,
+			Region: s.config.MinioRegion,
+		})
+		if cerr != nil {
+			return nil, "", apperrors.NewInternalError("failed to init minio client", cerr)
+		}
+		obj, err := client.GetObject(ctx, s.config.MinioBucket, file.Path, minio.GetObjectOptions{})
+		if err != nil {
+			return nil, "", apperrors.NewInternalError("failed to get file from minio", err)
+		}
+		defer obj.Close()
+		content, err = io.ReadAll(obj)
+		if err != nil {
+			return nil, "", apperrors.NewInternalError("failed to read file stream", err)
+		}
+	} else {
+		content, err = os.ReadFile(file.Path)
+		if err != nil {
+			return nil, "", apperrors.NewInternalError("failed to read file", err)
+		}
 	}
 
 	return content, file.MimeType, nil

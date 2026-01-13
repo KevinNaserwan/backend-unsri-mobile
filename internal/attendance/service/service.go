@@ -3,9 +3,11 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"math"
 	"time"
 
 	"unsri-backend/internal/attendance/repository"
+	locationRepo "unsri-backend/internal/location/repository"
 	apperrors "unsri-backend/internal/shared/errors"
 	"unsri-backend/internal/shared/models"
 	"unsri-backend/pkg/jwt"
@@ -14,15 +16,17 @@ import (
 
 // AttendanceService handles attendance business logic
 type AttendanceService struct {
-	repo *repository.AttendanceRepository
-	jwt  *jwt.JWT
+	repo         *repository.AttendanceRepository
+	locationRepo *locationRepo.LocationRepository
+	jwt          *jwt.JWT
 }
 
 // NewAttendanceService creates a new attendance service
-func NewAttendanceService(repo *repository.AttendanceRepository, jwtToken *jwt.JWT) *AttendanceService {
+func NewAttendanceService(repo *repository.AttendanceRepository, locationRepo *locationRepo.LocationRepository, jwtToken *jwt.JWT) *AttendanceService {
 	return &AttendanceService{
-		repo: repo,
-		jwt:  jwtToken,
+		repo:         repo,
+		locationRepo: locationRepo,
+		jwt:          jwtToken,
 	}
 }
 
@@ -348,7 +352,7 @@ func (s *AttendanceService) GetAttendanceByStudent(ctx context.Context, studentI
 }
 
 // GetAttendanceOverview gets attendance overview
-func (s *AttendanceService) GetAttendanceOverview(ctx context.Context, userID string, role string) (map[string]interface{}, error) {
+func (s *AttendanceService) GetAttendanceOverview(ctx context.Context, userID string, role string, startDate, endDate *string) (map[string]interface{}, error) {
 	overview := make(map[string]interface{})
 
 	// Today's schedules
@@ -365,13 +369,21 @@ func (s *AttendanceService) GetAttendanceOverview(ctx context.Context, userID st
 	}
 	overview["upcoming_schedules"] = upcomingSchedules
 
-	// Statistics for this month
-	now := time.Now()
-	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-	endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Second)
+	// Statistics
+	var startStr, endStr string
 
-	startStr := startOfMonth.Format("2006-01-02")
-	endStr := endOfMonth.Format("2006-01-02")
+	if startDate != nil && endDate != nil {
+		startStr = *startDate
+		endStr = *endDate
+	} else {
+		// Default to this month
+		now := time.Now()
+		startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+		endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Second)
+
+		startStr = startOfMonth.Format("2006-01-02")
+		endStr = endOfMonth.Format("2006-01-02")
+	}
 
 	stats, err := s.GetAttendanceStatistics(ctx, userID, &startStr, &endStr)
 	if err != nil {
@@ -917,10 +929,57 @@ type CheckInRequest struct {
 	Longitude      *float64 `json:"longitude,omitempty"`
 	IsViaUNSRIWiFi *bool    `json:"is_via_unsri_wifi,omitempty"`
 	Notes          string   `json:"notes,omitempty"`
+	SelfieFileID   *string  `json:"selfie_file_id,omitempty"`
+	SelfieURL      *string  `json:"selfie_url,omitempty"`
+}
+
+func (s *AttendanceService) validateLocation(ctx context.Context, lat, lon float64) (*models.Geofence, error) {
+	geofences, err := s.locationRepo.GetAllGeofences(ctx)
+	if err != nil {
+		return nil, apperrors.NewInternalError("failed to get geofences", err)
+	}
+
+	if len(geofences) == 0 {
+		return nil, apperrors.NewValidationError("no active geofences found")
+	}
+
+	for _, geo := range geofences {
+		distance := calculateDistance(lat, lon, geo.Latitude, geo.Longitude)
+		if distance <= geo.Radius {
+			return &geo, nil
+		}
+	}
+
+	return nil, apperrors.NewValidationError("location is outside of allowed geofences")
+}
+
+func calculateDistance(lat1, lon1, lat2, lon2 float64) float64 {
+	// Haversine formula
+	const R = 6371000 // Earth radius in meters
+	phi1 := lat1 * math.Pi / 180
+	phi2 := lat2 * math.Pi / 180
+	deltaPhi := (lat2 - lat1) * math.Pi / 180
+	deltaLambda := (lon2 - lon1) * math.Pi / 180
+
+	a := math.Sin(deltaPhi/2)*math.Sin(deltaPhi/2) +
+		math.Cos(phi1)*math.Cos(phi2)*
+			math.Sin(deltaLambda/2)*math.Sin(deltaLambda/2)
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+
+	return R * c
 }
 
 // CheckIn performs check-in for work attendance
 func (s *AttendanceService) CheckIn(ctx context.Context, userID string, req CheckInRequest) (*models.WorkAttendanceRecord, error) {
+	// Validate location
+	if req.Latitude == nil || req.Longitude == nil {
+		return nil, apperrors.NewValidationError("location is required")
+	}
+	geofence, err := s.validateLocation(ctx, *req.Latitude, *req.Longitude)
+	if err != nil {
+		return nil, err
+	}
+
 	now := time.Now()
 
 	// Check if already checked in today
@@ -963,12 +1022,18 @@ func (s *AttendanceService) CheckIn(ctx context.Context, userID string, req Chec
 		IsViaUNSRIWiFi: req.IsViaUNSRIWiFi,
 		Latitude:       req.Latitude,
 		Longitude:      req.Longitude,
+		GeofenceID:     &geofence.ID,
 		Notes:          req.Notes,
+		SelfieFileID:   req.SelfieFileID,
+		SelfieURL:      req.SelfieURL,
 	}
 
 	if err := s.repo.CreateWorkAttendanceRecord(ctx, record); err != nil {
 		return nil, apperrors.NewInternalError("failed to create check-in record", err)
 	}
+
+	// Ensure user field is not returned
+	record.User = nil
 
 	return record, nil
 }
@@ -980,6 +1045,8 @@ type CheckOutRequest struct {
 	Longitude      *float64 `json:"longitude,omitempty"`
 	IsViaUNSRIWiFi *bool    `json:"is_via_unsri_wifi,omitempty"`
 	Notes          string   `json:"notes,omitempty"`
+	SelfieFileID   *string  `json:"selfie_file_id,omitempty"`
+	SelfieURL      *string  `json:"selfie_url,omitempty"`
 }
 
 // CheckOut performs check-out for work attendance
@@ -1034,13 +1101,54 @@ func (s *AttendanceService) CheckOut(ctx context.Context, userID string, req Che
 		Latitude:       req.Latitude,
 		Longitude:      req.Longitude,
 		Notes:          req.Notes,
+		SelfieFileID:   req.SelfieFileID,
+		SelfieURL:      req.SelfieURL,
 	}
 
 	if err := s.repo.CreateWorkAttendanceRecord(ctx, record); err != nil {
 		return nil, apperrors.NewInternalError("failed to create check-out record", err)
 	}
 
+	// Ensure user field is not returned
+	record.User = nil
+
 	return record, nil
+}
+
+// GetAllWorkAttendanceRecordsRequest represents get all work attendance records request
+type GetAllWorkAttendanceRecordsRequest struct {
+	StartDate string `form:"start_date"`
+	EndDate   string `form:"end_date"`
+	Page      int    `form:"page,default=1"`
+	PerPage   int    `form:"per_page,default=20"`
+}
+
+// GetAllWorkAttendanceRecords gets all work attendance records
+func (s *AttendanceService) GetAllWorkAttendanceRecords(ctx context.Context, req GetAllWorkAttendanceRecordsRequest) ([]models.WorkAttendanceRecord, int64, error) {
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+	perPage := req.PerPage
+	if perPage < 1 {
+		perPage = 20
+	}
+
+	var startDatePtr, endDatePtr *time.Time
+	if req.StartDate != "" {
+		startDate, err := time.Parse("2006-01-02", req.StartDate)
+		if err == nil {
+			startDatePtr = &startDate
+		}
+	}
+	if req.EndDate != "" {
+		endDate, err := time.Parse("2006-01-02", req.EndDate)
+		if err == nil {
+			endDatePtr = &endDate
+		}
+	}
+
+	return s.repo.GetAllWorkAttendanceRecords(ctx, startDatePtr, endDatePtr, perPage, (page-1)*perPage)
 }
 
 // GetWorkAttendanceRecordsRequest represents get work attendance records request
