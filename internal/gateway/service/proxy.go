@@ -98,6 +98,8 @@ func (p *ProxyService) GetServiceURL(path string) (string, error) {
 		return p.config.Services.NotificationService.URL() + "/health", nil
 	case "/api/v1/calendar/health":
 		return p.config.Services.CalendarService.URL() + "/health", nil
+	case "/api/v1/location/health":
+		return p.config.Services.LocationService.URL() + "/health", nil
 	case "/api/v1/locations/health":
 		return p.config.Services.LocationService.URL() + "/health", nil
 	case "/api/v1/access/health":
@@ -138,6 +140,8 @@ func (p *ProxyService) GetServiceURL(path string) (string, error) {
 		return p.config.Services.NotificationService.URL() + path, nil
 	case strings.HasPrefix(path, "/api/v1/calendar"):
 		return p.config.Services.CalendarService.URL() + path, nil
+	case path == "/api/v1/location" || strings.HasPrefix(path, "/api/v1/location/"):
+		return p.config.Services.LocationService.URL() + path, nil
 	case strings.HasPrefix(path, "/api/v1/locations"):
 		return p.config.Services.LocationService.URL() + path, nil
 	case strings.HasPrefix(path, "/api/v1/access"):

@@ -322,6 +322,44 @@ func (s *AttendanceService) GetAttendanceStatistics(ctx context.Context, userID 
 	return s.repo.GetAttendanceStatistics(ctx, userID, start, end)
 }
 
+// GetWorkAttendanceStatistics gets work attendance statistics
+func (s *AttendanceService) GetWorkAttendanceStatistics(ctx context.Context, userID *string, startDate, endDate *string) (map[string]interface{}, error) {
+	var start, end *time.Time
+
+	if startDate != nil {
+		if t, err := time.Parse("2006-01-02", *startDate); err == nil {
+			start = &t
+		}
+	}
+
+	if endDate != nil {
+		if t, err := time.Parse("2006-01-02", *endDate); err == nil {
+			end = &t
+		}
+	}
+
+	return s.repo.GetWorkAttendanceStatistics(ctx, userID, start, end)
+}
+
+// GetWorkAttendanceSummaries gets work attendance summaries grouped by user
+func (s *AttendanceService) GetWorkAttendanceSummaries(ctx context.Context, startDate, endDate *string) ([]map[string]interface{}, error) {
+	var start, end *time.Time
+
+	if startDate != nil {
+		if t, err := time.Parse("2006-01-02", *startDate); err == nil {
+			start = &t
+		}
+	}
+
+	if endDate != nil {
+		if t, err := time.Parse("2006-01-02", *endDate); err == nil {
+			end = &t
+		}
+	}
+
+	return s.repo.GetWorkAttendanceSummaries(ctx, start, end)
+}
+
 // GetAttendanceByCourse gets attendances by course
 func (s *AttendanceService) GetAttendanceByCourse(ctx context.Context, courseID string, startDate, endDate *string) ([]models.Attendance, error) {
 	var start, end *time.Time
@@ -937,13 +975,18 @@ type CheckInRequest struct {
 func (s *AttendanceService) CheckIn(ctx context.Context, userID string, req CheckInRequest) (*models.WorkAttendanceRecord, error) {
 	now := time.Now()
 
-	// Validate location if provided (geofencing)
-	if req.Latitude != nil && req.Longitude != nil {
-		_, err := s.locationRepo.CheckLocationInGeofence(ctx, *req.Latitude, *req.Longitude)
-		if err != nil {
-			return nil, apperrors.NewBadRequestError("location not within allowed area")
-		}
+	if req.SelfieURL == nil || *req.SelfieURL == "" {
+		return nil, apperrors.NewBadRequestError("selfie photo is required for check-in")
 	}
+	if req.Latitude == nil || req.Longitude == nil {
+		return nil, apperrors.NewBadRequestError("location is required for check-in")
+	}
+
+	geofence, err := s.locationRepo.CheckLocationInGeofence(ctx, *req.Latitude, *req.Longitude)
+	if err != nil {
+		return nil, apperrors.NewBadRequestError("location not within allowed area")
+	}
+	geofenceID := geofence.ID
 
 	// Check if already checked in today
 	existingRecord, err := s.repo.GetTodayWorkAttendanceRecord(ctx, userID, "CHECK_IN")
@@ -966,12 +1009,29 @@ func (s *AttendanceService) CheckIn(ctx context.Context, userID string, req Chec
 		}
 	}
 
-	// Determine status based on schedule
+	// Determine status based on schedule or user shift
 	status := models.StatusCheckIn
+	var referenceTime time.Time
+	hasReferenceTime := false
+
 	if schedule != nil {
-		scheduleStartTime := time.Date(now.Year(), now.Month(), now.Day(),
+		referenceTime = time.Date(now.Year(), now.Month(), now.Day(),
 			schedule.StartTime.Hour(), schedule.StartTime.Minute(), 0, 0, now.Location())
-		if now.After(scheduleStartTime.Add(15 * time.Minute)) {
+		hasReferenceTime = true
+	} else {
+		// Fallback to User Shift if no specific schedule exists
+		userShifts, err := s.repo.GetUserShiftsByUserID(ctx, userID, &now)
+		if err == nil && len(userShifts) > 0 {
+			// Use the most recent effective shift
+			shift := userShifts[0].Shift
+			referenceTime = time.Date(now.Year(), now.Month(), now.Day(),
+				shift.StartTime.Hour(), shift.StartTime.Minute(), 0, 0, now.Location())
+			hasReferenceTime = true
+		}
+	}
+
+	if hasReferenceTime {
+		if now.After(referenceTime.Add(15 * time.Minute)) {
 			status = models.StatusLateIn
 		}
 	}
@@ -985,6 +1045,7 @@ func (s *AttendanceService) CheckIn(ctx context.Context, userID string, req Chec
 		IsViaUNSRIWiFi: req.IsViaUNSRIWiFi,
 		Latitude:       req.Latitude,
 		Longitude:      req.Longitude,
+		GeofenceID:     &geofenceID,
 		SelfieURL:      req.SelfieURL,
 		Notes:          req.Notes,
 	}
@@ -1009,6 +1070,19 @@ type CheckOutRequest struct {
 // CheckOut performs check-out for work attendance
 func (s *AttendanceService) CheckOut(ctx context.Context, userID string, req CheckOutRequest) (*models.WorkAttendanceRecord, error) {
 	now := time.Now()
+
+	if req.SelfieURL == nil || *req.SelfieURL == "" {
+		return nil, apperrors.NewBadRequestError("selfie photo is required for check-out")
+	}
+	if req.Latitude == nil || req.Longitude == nil {
+		return nil, apperrors.NewBadRequestError("location is required for check-out")
+	}
+
+	geofence, err := s.locationRepo.CheckLocationInGeofence(ctx, *req.Latitude, *req.Longitude)
+	if err != nil {
+		return nil, apperrors.NewBadRequestError("location not within allowed area")
+	}
+	geofenceID := geofence.ID
 
 	// Check if checked in today
 	checkInRecord, err := s.repo.GetTodayWorkAttendanceRecord(ctx, userID, "CHECK_IN")
@@ -1057,6 +1131,7 @@ func (s *AttendanceService) CheckOut(ctx context.Context, userID string, req Che
 		IsViaUNSRIWiFi: req.IsViaUNSRIWiFi,
 		Latitude:       req.Latitude,
 		Longitude:      req.Longitude,
+		GeofenceID:     &geofenceID,
 		SelfieURL:      req.SelfieURL,
 		Notes:          req.Notes,
 	}

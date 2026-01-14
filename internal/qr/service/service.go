@@ -248,23 +248,69 @@ func (s *QRService) GenerateAccessQR(ctx context.Context, userID string) (*Gener
 		return nil, apperrors.NewBadRequestError("user is inactive")
 	}
 
-	// Generate new session ID (UUID) - always create new session
+	existingActiveQR, err := s.repo.GetUserAccessQR(ctx, userID)
+	if err == nil && existingActiveQR != nil && existingActiveQR.SessionID != "" {
+		qrData := s.buildGateQRData(existingActiveQR.SessionID, user)
+		qrImage, err := qrcode.GenerateQRCode(qrData)
+		if err != nil {
+			return nil, apperrors.NewInternalError("failed to generate QR code", err)
+		}
+
+		qrCodeBase64 := base64.StdEncoding.EncodeToString(qrImage)
+
+		return &GenerateQRResponse{
+			ID:        existingActiveQR.ID,
+			QRCode:    qrCodeBase64,
+			ExpiresAt: "",
+		}, nil
+	}
+
 	sessionID := uuid.New().String()
 
-	// Generate unique token for user (legacy, kept for backward compatibility)
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
 		return nil, apperrors.NewInternalError("failed to generate token", err)
 	}
 	qrToken := base64.URLEncoding.EncodeToString(tokenBytes)
 
-	// Create new user access QR with new session ID
+	now := time.Now()
+
+	existingAnyQR, err := s.repo.GetLatestUserAccessQRByUserID(ctx, userID)
+	if err == nil && existingAnyQR != nil {
+		existingAnyQR.SessionID = sessionID
+		existingAnyQR.QRToken = qrToken
+		existingAnyQR.IsActive = true
+		existingAnyQR.ExpiresAt = nil
+		existingAnyQR.CreatedAt = now
+		existingAnyQR.UpdatedAt = now
+
+		if err := s.repo.UpdateUserAccessQR(ctx, existingAnyQR); err != nil {
+			return nil, apperrors.NewInternalError("failed to update user access QR", err)
+		}
+
+		qrData := s.buildGateQRData(sessionID, user)
+		qrImage, err := qrcode.GenerateQRCode(qrData)
+		if err != nil {
+			return nil, apperrors.NewInternalError("failed to generate QR code", err)
+		}
+
+		qrCodeBase64 := base64.StdEncoding.EncodeToString(qrImage)
+
+		return &GenerateQRResponse{
+			ID:        existingAnyQR.ID,
+			QRCode:    qrCodeBase64,
+			ExpiresAt: "",
+		}, nil
+	}
+
 	userQR := &models.UserAccessQR{
 		UserID:    userID,
 		SessionID: sessionID,
 		QRToken:   qrToken,
-		IsActive:  true, // Start as active (tap-in ready)
-		ExpiresAt: nil,  // Not expired yet
+		IsActive:  true,
+		ExpiresAt: nil,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 
 	if err := s.repo.CreateUserAccessQR(ctx, userQR); err != nil {

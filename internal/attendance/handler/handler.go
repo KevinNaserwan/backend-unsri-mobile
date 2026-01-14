@@ -10,11 +10,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"unsri-backend/internal/attendance/service"
+	apperrors "unsri-backend/internal/shared/errors"
 	"unsri-backend/internal/shared/logger"
 	"unsri-backend/internal/shared/utils"
-	apperrors "unsri-backend/internal/shared/errors"
+
+	"github.com/gin-gonic/gin"
 )
 
 // AttendanceHandler handles HTTP requests for attendance
@@ -56,7 +57,7 @@ func (h *AttendanceHandler) ScanQR(c *gin.Context) {
 
 	// Handle multipart form (for selfie upload)
 	var req service.ScanQRRequest
-	
+
 	// Try to bind JSON first (for backward compatibility)
 	if err := c.ShouldBindJSON(&req); err != nil {
 		// If JSON binding fails, try multipart form
@@ -576,7 +577,7 @@ func (h *AttendanceHandler) CheckIn(c *gin.Context) {
 	userID := c.GetString("user_id")
 
 	var req service.CheckInRequest
-	
+
 	// Try to bind JSON first (for backward compatibility)
 	if err := c.ShouldBindJSON(&req); err != nil {
 		// If JSON binding fails, try multipart form
@@ -615,7 +616,7 @@ func (h *AttendanceHandler) CheckOut(c *gin.Context) {
 	userID := c.GetString("user_id")
 
 	var req service.CheckOutRequest
-	
+
 	// Try to bind JSON first (for backward compatibility)
 	if err := c.ShouldBindJSON(&req); err != nil {
 		// If JSON binding fails, try multipart form
@@ -657,8 +658,10 @@ func (h *AttendanceHandler) GetWorkAttendanceRecords(c *gin.Context) {
 		return
 	}
 
-	// If user_id not provided, use current user
-	if req.UserID == "" {
+	// If user_id not provided and not admin, use current user
+	// If admin and user_id not provided, it means fetch all
+	userRole := c.GetString("user_role") // Assuming user_role is set in context
+	if req.UserID == "" && userRole != "admin" {
 		req.UserID = c.GetString("user_id")
 	}
 
@@ -698,7 +701,7 @@ func (h *AttendanceHandler) uploadSelfieToStorage(c *gin.Context, userID string,
 	if err != nil {
 		return "", apperrors.NewInternalError("failed to create form file", err)
 	}
-	
+
 	if _, err := io.Copy(part, src); err != nil {
 		return "", apperrors.NewInternalError("failed to copy file data", err)
 	}
@@ -759,3 +762,52 @@ func (h *AttendanceHandler) uploadSelfieToStorage(c *gin.Context, userID string,
 	return uploadResp.Data.URL, nil
 }
 
+// GetWorkAttendanceStatistics handles getting work attendance statistics
+func (h *AttendanceHandler) GetWorkAttendanceStatistics(c *gin.Context) {
+	userID := c.Query("user_id")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+
+	var pUserID *string
+	if userID != "" {
+		pUserID = &userID
+	}
+
+	var pStartDate, pEndDate *string
+	if startDate != "" {
+		pStartDate = &startDate
+	}
+	if endDate != "" {
+		pEndDate = &endDate
+	}
+
+	stats, err := h.service.GetWorkAttendanceStatistics(c.Request.Context(), pUserID, pStartDate, pEndDate)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, stats)
+}
+
+// GetWorkAttendanceSummaries handles getting work attendance summaries
+func (h *AttendanceHandler) GetWorkAttendanceSummaries(c *gin.Context) {
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+
+	var pStartDate, pEndDate *string
+	if startDate != "" {
+		pStartDate = &startDate
+	}
+	if endDate != "" {
+		pEndDate = &endDate
+	}
+
+	summaries, err := h.service.GetWorkAttendanceSummaries(c.Request.Context(), pStartDate, pEndDate)
+	if err != nil {
+		utils.ErrorResponse(c, 0, err)
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, summaries)
+}
